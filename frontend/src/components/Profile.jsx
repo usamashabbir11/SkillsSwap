@@ -25,11 +25,14 @@ const Profile = () => {
   return (
     <>
       <Navbar />
-      <div className="max-w-md mx-auto mt-10 p-6 bg-white shadow rounded">
+      <div className="max-w-2xl mx-auto mt-10 p-6 bg-white shadow rounded">
         <h2 className="text-xl font-bold mb-4">My Profile</h2>
 
         <p><strong>Name:</strong> {user.name}</p>
         <p><strong>Email:</strong> {user.email}</p>
+        <p><strong>Bio:</strong> {user.bio || "Not added"}</p>
+        <p><strong>Phone:</strong> {user.phone || "Not added"}</p>
+        <p><strong>City:</strong> {user.city || "Not added"}</p>
 
         <button
           onClick={() => navigate("/profile/edit")}

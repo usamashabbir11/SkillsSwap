@@ -3,6 +3,7 @@ import registerValidation from "../validations/userValidation.js";
 import { hashPassword } from "../utils/hash.js";
 import { generateToken } from "../utils/token.js";
 import bcrypt from "bcrypt";
+import mongoose from "mongoose";
 import User from "../models/userModel.js";
 
 const registerUser = async (req, res) => {
@@ -62,32 +63,39 @@ const getProfile = async (req, res) => {
 };
 
 const updateProfile = async (req, res) => {
-  const { name, email } = req.body;
+  const { name, email, bio, phone, city } = req.body;
 
   const user = await User.findById(req.user._id);
 
-  user.name = name || user.name;
-  user.email = email || user.email;
+  user.name = name ?? user.name;
+  user.email = email ?? user.email;
+  user.bio = bio ?? user.bio;
+  user.phone = phone ?? user.phone;
+  user.city = city ?? user.city;
 
   const updatedUser = await user.save();
 
   res.json({
     success: true,
-    data: {
-      id: updatedUser._id,
-      name: updatedUser.name,
-      email: updatedUser.email
-    }
+    data: updatedUser
   });
 };
 
 const getAllUsers = async (req, res) => {
-  const users = await User.find().select("name email");
+  // 🔴 EXCLUDE LOGGED-IN USER
+  const users = await User.find({
+    _id: { $ne: req.user._id }
+  }).select("name email bio phone city");
+
   res.json({ success: true, data: users });
 };
 
 const getUserById = async (req, res) => {
-  const user = await User.findById(req.params.id).select("name email");
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ success: false, message: "Invalid user id" });
+  }
+
+  const user = await User.findById(req.params.id).select("name email bio phone city");
   if (!user) {
     return res.status(404).json({ success: false, message: "User not found" });
   }
