@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import userService from "../services/userService";
 
 const Login = () => {
@@ -24,13 +24,35 @@ const Login = () => {
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-white shadow rounded">
       <h2 className="text-2xl font-bold text-center">Login</h2>
+
       {error && <p className="text-red-600 text-center">{error}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-        <input name="email" placeholder="Email" onChange={handleChange} className="w-full border p-2" />
-        <input name="password" type="password" placeholder="Password" onChange={handleChange} className="w-full border p-2" />
-        <button className="w-full bg-green-600 text-white p-2">Login</button>
+        <input
+          name="email"
+          placeholder="Email"
+          onChange={handleChange}
+          className="w-full border p-2"
+        />
+        <input
+          name="password"
+          type="password"
+          placeholder="Password"
+          onChange={handleChange}
+          className="w-full border p-2"
+        />
+        <button className="w-full bg-green-600 text-white p-2">
+          Login
+        </button>
       </form>
+
+      {/* Register link */}
+      <p className="text-center mt-4 text-sm">
+        Don’t have an account?{" "}
+        <Link to="/register" className="text-green-600 font-semibold hover:underline">
+          Register
+        </Link>
+      </p>
     </div>
   );
 };

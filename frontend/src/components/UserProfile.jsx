@@ -26,10 +26,18 @@ const UserProfile = () => {
   return (
     <>
       <Navbar />
-      <div className="max-w-md mx-auto mt-10 p-6 bg-white shadow rounded">
-        <h2 className="text-xl font-bold mb-2">{user.name}</h2>
-        <p><strong>Name:</strong> {user.name}</p>
+      <div className="max-w-2xl mx-auto mt-10 p-6 bg-white shadow rounded">
+        <h2 className="text-xl font-bold mb-4">{user.name}</h2>
+
         <p><strong>Email:</strong> {user.email}</p>
+        <p><strong>Bio:</strong> {user.bio || "Not added"}</p>
+        <p><strong>Phone:</strong> {user.phone || "Not added"}</p>
+        <p><strong>City:</strong> {user.city || "Not added"}</p>
+
+        {/* READ-ONLY NOTICE */}
+        <p className="mt-6 text-sm text-gray-500 italic">
+          This is a public profile. You cannot edit it.
+        </p>
       </div>
     </>
   );
