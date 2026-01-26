@@ -25,21 +25,37 @@ const Profile = () => {
   return (
     <>
       <Navbar />
-      <div className="max-w-2xl mx-auto mt-10 p-6 bg-white shadow rounded">
-        <h2 className="text-xl font-bold mb-4">My Profile</h2>
 
-        <p><strong>Name:</strong> {user.name}</p>
-        <p><strong>Email:</strong> {user.email}</p>
-        <p><strong>Bio:</strong> {user.bio || "Not added"}</p>
-        <p><strong>Phone:</strong> {user.phone || "Not added"}</p>
-        <p><strong>City:</strong> {user.city || "Not added"}</p>
+      {/* Cover */}
+      <div className="h-56 bg-gradient-to-r from-blue-500 to-purple-500"></div>
 
-        <button
-          onClick={() => navigate("/profile/edit")}
-          className="mt-4 bg-blue-600 text-white px-4 py-1 rounded"
-        >
-          Edit Profile
-        </button>
+      {/* Profile Header */}
+      <div className="max-w-5xl mx-auto px-6 -mt-16">
+        <div className="bg-white shadow rounded p-6">
+          <h1 className="text-3xl font-bold">{user.name}</h1>
+          <p className="text-gray-600">{user.email}</p>
+
+          <button
+            onClick={() => navigate("/profile/edit")}
+            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded"
+          >
+            Edit Profile
+          </button>
+        </div>
+
+        {/* Profile Content */}
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white shadow rounded p-6">
+            <h3 className="font-semibold mb-2">About</h3>
+            <p>{user.bio || "No bio added"}</p>
+          </div>
+
+          <div className="bg-white shadow rounded p-6">
+            <h3 className="font-semibold mb-2">Contact</h3>
+            <p><strong>Phone:</strong> {user.phone || "Not added"}</p>
+            <p><strong>City:</strong> {user.city || "Not added"}</p>
+          </div>
+        </div>
       </div>
     </>
   );
