@@ -61,6 +61,26 @@ const getProfile = async (req, res) => {
   res.json({ success: true, data: req.user });
 };
 
+const updateProfile = async (req, res) => {
+  const { name, email } = req.body;
+
+  const user = await User.findById(req.user._id);
+
+  user.name = name || user.name;
+  user.email = email || user.email;
+
+  const updatedUser = await user.save();
+
+  res.json({
+    success: true,
+    data: {
+      id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email
+    }
+  });
+};
+
 const getAllUsers = async (req, res) => {
   const users = await User.find().select("name email");
   res.json({ success: true, data: users });
@@ -79,6 +99,7 @@ export default {
   registerUser,
   loginUser,
   getProfile,
+  updateProfile,
   getAllUsers,
   getUserById
 };
