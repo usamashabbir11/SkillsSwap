@@ -98,6 +98,30 @@ const UserProfile = () => {
             </div>
           </div>
         </div>
+
+        {/* COURSES */}
+        <div className="mt-10 bg-white shadow rounded p-6">
+          <h3 className="text-xl font-semibold mb-4">Courses</h3>
+
+          {user.courses?.length ? (
+            <div className="space-y-6">
+              {user.courses.map((course, index) => (
+                <div key={index}>
+                  <h4 className="font-semibold">{course.title}</h4>
+                  <p className="text-gray-600 mb-2">Price: ${course.price}</p>
+
+                  <video
+                    controls
+                    className="w-full rounded"
+                    src={`http://localhost:5000${course.video}`}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p>No courses available.</p>
+          )}
+        </div>
       </div>
     </>
   );
