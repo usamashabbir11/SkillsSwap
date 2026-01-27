@@ -38,7 +38,14 @@ const loginUser = async (req, res) => {
 
   res.json({
     success: true,
-    data: { token, user: { id: user._id, name: user.name, email: user.email } }
+    data: {
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email
+      }
+    }
   });
 };
 
@@ -47,7 +54,7 @@ const getProfile = async (req, res) => {
   res.json({ success: true, data: req.user });
 };
 
-/* UPDATE PROFILE DATA */
+/* UPDATE PROFILE */
 const updateProfile = async (req, res) => {
   const { name, email, bio, phone, city } = req.body;
   const user = await User.findById(req.user._id);
@@ -62,26 +69,23 @@ const updateProfile = async (req, res) => {
   res.json({ success: true, data: user });
 };
 
-/* UPDATE PROFILE IMAGE */
-const updateProfileImage = async (req, res) => {
+/* ✅ PHASE 4 — UPDATE SKILLS */
+const updateSkills = async (req, res) => {
+  const { skillsOffered, skillsRequired } = req.body;
   const user = await User.findById(req.user._id);
-  user.profileImage = `/uploads/${req.file.filename}`;
-  await user.save();
-  res.json({ success: true, image: user.profileImage });
-};
 
-/* UPDATE COVER IMAGE */
-const updateCoverImage = async (req, res) => {
-  const user = await User.findById(req.user._id);
-  user.coverImage = `/uploads/${req.file.filename}`;
+  user.skillsOffered = Array.isArray(skillsOffered) ? skillsOffered : [];
+  user.skillsRequired = Array.isArray(skillsRequired) ? skillsRequired : [];
+
   await user.save();
-  res.json({ success: true, image: user.coverImage });
+  res.json({ success: true, data: user });
 };
 
 /* ALL USERS */
 const getAllUsers = async (req, res) => {
   const users = await User.find({ _id: { $ne: req.user._id } })
-    .select("name email bio phone city profileImage coverImage");
+    .select("name email bio phone city profileImage coverImage skillsOffered skillsRequired");
+
   res.json({ success: true, data: users });
 };
 
@@ -92,7 +96,7 @@ const getUserById = async (req, res) => {
   }
 
   const user = await User.findById(req.params.id)
-    .select("name email bio phone city profileImage coverImage");
+    .select("name email bio phone city profileImage coverImage skillsOffered skillsRequired");
 
   if (!user) {
     return res.status(404).json({ success: false, message: "User not found" });
@@ -101,13 +105,13 @@ const getUserById = async (req, res) => {
   res.json({ success: true, data: user });
 };
 
+/* ✅ EXPORT — THIS WAS THE ISSUE */
 export default {
   registerUser,
   loginUser,
   getProfile,
   updateProfile,
-  updateProfileImage,
-  updateCoverImage,
+  updateSkills,
   getAllUsers,
   getUserById
 };
