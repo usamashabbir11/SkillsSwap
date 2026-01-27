@@ -10,9 +10,18 @@ const userSchema = new mongoose.Schema(
     phone: { type: String, default: "" },
     city: { type: String, default: "" },
 
-    /* phase 3 */
     profileImage: { type: String, default: "" },
-    coverImage: { type: String, default: "" }
+    coverImage: { type: String, default: "" },
+
+    // PHASE 4 – SKILLS
+    skillsOffered: {
+      type: [String],
+      default: []
+    },
+    skillsRequired: {
+      type: [String],
+      default: []
+    }
   },
   { timestamps: true }
 );
