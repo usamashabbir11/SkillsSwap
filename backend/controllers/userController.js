@@ -6,6 +6,7 @@ import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 import User from "../models/userModel.js";
 
+/* REGISTER */
 const registerUser = async (req, res) => {
   const { error } = registerValidation.validate(req.body);
   if (error) {
@@ -13,33 +14,23 @@ const registerUser = async (req, res) => {
   }
 
   const { name, email, password } = req.body;
-
   const existingUser = await userService.findUserByEmail(email);
   if (existingUser) {
     return res.status(400).json({ success: false, message: "Email already registered" });
   }
 
   const hashedPassword = await hashPassword(password);
-
-  await userService.createUser({
-    name,
-    email,
-    password: hashedPassword
-  });
+  await userService.createUser({ name, email, password: hashedPassword });
 
   res.status(201).json({ success: true, message: "User registered successfully" });
 };
 
+/* LOGIN */
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
-
   const user = await userService.findUserByEmail(email);
-  if (!user) {
-    return res.status(401).json({ success: false, message: "Invalid credentials" });
-  }
 
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
+  if (!user || !(await bcrypt.compare(password, user.password))) {
     return res.status(401).json({ success: false, message: "Invalid credentials" });
   }
 
@@ -47,24 +38,18 @@ const loginUser = async (req, res) => {
 
   res.json({
     success: true,
-    data: {
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email
-      }
-    }
+    data: { token, user: { id: user._id, name: user.name, email: user.email } }
   });
 };
 
+/* GET OWN PROFILE */
 const getProfile = async (req, res) => {
   res.json({ success: true, data: req.user });
 };
 
+/* UPDATE PROFILE DATA */
 const updateProfile = async (req, res) => {
   const { name, email, bio, phone, city } = req.body;
-
   const user = await User.findById(req.user._id);
 
   user.name = name ?? user.name;
@@ -73,29 +58,42 @@ const updateProfile = async (req, res) => {
   user.phone = phone ?? user.phone;
   user.city = city ?? user.city;
 
-  const updatedUser = await user.save();
-
-  res.json({
-    success: true,
-    data: updatedUser
-  });
+  await user.save();
+  res.json({ success: true, data: user });
 };
 
-const getAllUsers = async (req, res) => {
-  // 🔴 EXCLUDE LOGGED-IN USER
-  const users = await User.find({
-    _id: { $ne: req.user._id }
-  }).select("name email bio phone city");
+/* UPDATE PROFILE IMAGE */
+const updateProfileImage = async (req, res) => {
+  const user = await User.findById(req.user._id);
+  user.profileImage = `/uploads/${req.file.filename}`;
+  await user.save();
+  res.json({ success: true, image: user.profileImage });
+};
 
+/* UPDATE COVER IMAGE */
+const updateCoverImage = async (req, res) => {
+  const user = await User.findById(req.user._id);
+  user.coverImage = `/uploads/${req.file.filename}`;
+  await user.save();
+  res.json({ success: true, image: user.coverImage });
+};
+
+/* ALL USERS */
+const getAllUsers = async (req, res) => {
+  const users = await User.find({ _id: { $ne: req.user._id } })
+    .select("name email bio phone city profileImage coverImage");
   res.json({ success: true, data: users });
 };
 
+/* SINGLE USER */
 const getUserById = async (req, res) => {
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     return res.status(400).json({ success: false, message: "Invalid user id" });
   }
 
-  const user = await User.findById(req.params.id).select("name email bio phone city");
+  const user = await User.findById(req.params.id)
+    .select("name email bio phone city profileImage coverImage");
+
   if (!user) {
     return res.status(404).json({ success: false, message: "User not found" });
   }
@@ -108,6 +106,8 @@ export default {
   loginUser,
   getProfile,
   updateProfile,
+  updateProfileImage,
+  updateCoverImage,
   getAllUsers,
   getUserById
 };
