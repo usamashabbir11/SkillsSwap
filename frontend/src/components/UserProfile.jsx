@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Navbar from "./Navbar";
-import { getUserByIdApi } from "../api/userApi";
+import { getUserByIdApi, sendSwapRequestApi } from "../api/userApi";
 
 const UserProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [user, setUser] = useState(null);
+  const [sent, setSent] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -19,6 +21,15 @@ const UserProfile = () => {
     };
     fetchUser();
   }, [id, navigate]);
+
+  const sendRequest = async () => {
+    try {
+      await sendSwapRequestApi(id);
+      setSent(true);
+    } catch {
+      // optional: silently fail or show toast later
+    }
+  };
 
   if (!user) return null;
 
@@ -50,10 +61,23 @@ const UserProfile = () => {
             className="w-28 h-28 rounded-full object-cover border-4 border-white"
           />
 
-          <div>
+          <div className="flex-1">
             <h1 className="text-3xl font-bold">{user.name}</h1>
             <p className="text-gray-600">{user.email}</p>
           </div>
+
+          {/* SWAP BUTTON */}
+          <button
+            disabled={sent}
+            onClick={sendRequest}
+            className={`px-4 py-2 rounded text-white ${
+              sent
+                ? "bg-gray-500 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
+          >
+            {sent ? "Request Sent ⏳" : "Request Skill Swap"}
+          </button>
         </div>
 
         {/* ABOUT + CONTACT */}
@@ -77,7 +101,10 @@ const UserProfile = () => {
             <div className="flex flex-wrap gap-2">
               {user.skillsOffered?.length
                 ? user.skillsOffered.map(skill => (
-                    <span key={skill} className="bg-blue-100 px-3 py-1 rounded text-sm">
+                    <span
+                      key={skill}
+                      className="bg-blue-100 px-3 py-1 rounded text-sm"
+                    >
                       {skill}
                     </span>
                   ))
@@ -90,7 +117,10 @@ const UserProfile = () => {
             <div className="flex flex-wrap gap-2">
               {user.skillsRequired?.length
                 ? user.skillsRequired.map(skill => (
-                    <span key={skill} className="bg-red-100 px-3 py-1 rounded text-sm">
+                    <span
+                      key={skill}
+                      className="bg-red-100 px-3 py-1 rounded text-sm"
+                    >
                       {skill}
                     </span>
                   ))
@@ -108,7 +138,9 @@ const UserProfile = () => {
               {user.courses.map((course, index) => (
                 <div key={index}>
                   <h4 className="font-semibold">{course.title}</h4>
-                  <p className="text-gray-600 mb-2">Price: ${course.price}</p>
+                  <p className="text-gray-600 mb-2">
+                    Price: ${course.price}
+                  </p>
 
                   <video
                     controls
