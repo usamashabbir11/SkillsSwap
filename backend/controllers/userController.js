@@ -40,21 +40,15 @@ const loginUser = async (req, res) => {
     success: true,
     data: {
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email
-      }
+      user: { id: user._id, name: user.name, email: user.email }
     }
   });
 };
 
-/* GET OWN PROFILE */
 const getProfile = async (req, res) => {
   res.json({ success: true, data: req.user });
 };
 
-/* UPDATE PROFILE */
 const updateProfile = async (req, res) => {
   const { name, email, bio, phone, city } = req.body;
   const user = await User.findById(req.user._id);
@@ -69,7 +63,6 @@ const updateProfile = async (req, res) => {
   res.json({ success: true, data: user });
 };
 
-/* ✅ PHASE 4 — UPDATE SKILLS */
 const updateSkills = async (req, res) => {
   const { skillsOffered, skillsRequired } = req.body;
   const user = await User.findById(req.user._id);
@@ -81,23 +74,37 @@ const updateSkills = async (req, res) => {
   res.json({ success: true, data: user });
 };
 
-/* ALL USERS */
-const getAllUsers = async (req, res) => {
-  const users = await User.find({ _id: { $ne: req.user._id } })
-    .select("name email bio phone city profileImage coverImage skillsOffered skillsRequired");
+/* ✅ PHASE – COURSES */
+const addCourse = async (req, res) => {
+  const { title, price } = req.body;
 
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: "Video required" });
+  }
+
+  const user = await User.findById(req.user._id);
+
+  user.courses.push({
+    title,
+    price,
+    video: `/uploads/${req.file.filename}`
+  });
+
+  await user.save();
+  res.json({ success: true, data: user.courses });
+};
+
+const getAllUsers = async (req, res) => {
+  const users = await User.find({ _id: { $ne: req.user._id } });
   res.json({ success: true, data: users });
 };
 
-/* SINGLE USER */
 const getUserById = async (req, res) => {
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     return res.status(400).json({ success: false, message: "Invalid user id" });
   }
 
-  const user = await User.findById(req.params.id)
-    .select("name email bio phone city profileImage coverImage skillsOffered skillsRequired");
-
+  const user = await User.findById(req.params.id);
   if (!user) {
     return res.status(404).json({ success: false, message: "User not found" });
   }
@@ -105,13 +112,13 @@ const getUserById = async (req, res) => {
   res.json({ success: true, data: user });
 };
 
-/* ✅ EXPORT — THIS WAS THE ISSUE */
 export default {
   registerUser,
   loginUser,
   getProfile,
   updateProfile,
   updateSkills,
+  addCourse,
   getAllUsers,
   getUserById
 };

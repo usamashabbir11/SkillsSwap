@@ -22,6 +22,12 @@ const EditProfile = () => {
   const [profileUploaded, setProfileUploaded] = useState(false);
   const [coverUploaded, setCoverUploaded] = useState(false);
 
+  /* COURSE STATE */
+  const [courseTitle, setCourseTitle] = useState("");
+  const [coursePrice, setCoursePrice] = useState("");
+  const [courseVideo, setCourseVideo] = useState(null);
+  const [courseVideoSelected, setCourseVideoSelected] = useState(false);
+
   useEffect(() => {
     getProfileApi().then(res => {
       setFormData({
@@ -48,11 +54,7 @@ const EditProfile = () => {
     await axios.put(
       `http://localhost:5000/users/profile/${type}`,
       data,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`
-        }
-      }
+      { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
     );
 
     if (type === "image") setProfileUploaded(true);
@@ -64,23 +66,31 @@ const EditProfile = () => {
     await axios.put(
       "http://localhost:5000/users/skills",
       {
-        skillsOffered: skillsOffered
-          .split(",")
-          .map(s => s.trim())
-          .filter(Boolean),
-        skillsRequired: skillsRequired
-          .split(",")
-          .map(s => s.trim())
-          .filter(Boolean)
+        skillsOffered: skillsOffered.split(",").map(s => s.trim()).filter(Boolean),
+        skillsRequired: skillsRequired.split(",").map(s => s.trim()).filter(Boolean)
       },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`
-        }
-      }
+      { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+    );
+    setSkillsSaved(true);
+  };
+
+  /* ADD COURSE */
+  const addCourse = async () => {
+    const data = new FormData();
+    data.append("title", courseTitle);
+    data.append("price", coursePrice);
+    data.append("video", courseVideo);
+
+    await axios.post(
+      "http://localhost:5000/users/courses",
+      data,
+      { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
     );
 
-    setSkillsSaved(true);
+    setCourseTitle("");
+    setCoursePrice("");
+    setCourseVideo(null);
+    setCourseVideoSelected(false);
   };
 
   /* SAVE PROFILE INFO */
@@ -99,38 +109,14 @@ const EditProfile = () => {
 
         {/* IMAGE UPLOADS */}
         <div className="flex gap-4 mb-6">
-          <label
-            className={`cursor-pointer px-4 py-2 rounded text-white transition ${
-              profileUploaded
-                ? "bg-gray-500"
-                : "bg-green-600 hover:bg-green-700"
-            }`}
-          >
-            {profileUploaded
-              ? "Profile Picture Uploaded ✅"
-              : "Upload Profile Picture"}
-            <input
-              type="file"
-              className="hidden"
-              onChange={e => uploadImage(e, "image")}
-            />
+          <label className="cursor-pointer bg-green-600 text-white px-4 py-2 rounded">
+            Upload Profile Picture
+            <input type="file" className="hidden" onChange={e => uploadImage(e, "image")} />
           </label>
 
-          <label
-            className={`cursor-pointer px-4 py-2 rounded text-white transition ${
-              coverUploaded
-                ? "bg-gray-500"
-                : "bg-green-600 hover:bg-green-700"
-            }`}
-          >
-            {coverUploaded
-              ? "Cover Photo Uploaded ✅"
-              : "Upload Cover Photo"}
-            <input
-              type="file"
-              className="hidden"
-              onChange={e => uploadImage(e, "cover")}
-            />
+          <label className="cursor-pointer bg-green-600 text-white px-4 py-2 rounded">
+            Upload Cover Photo
+            <input type="file" className="hidden" onChange={e => uploadImage(e, "cover")} />
           </label>
         </div>
 
@@ -143,7 +129,6 @@ const EditProfile = () => {
             setSkillsSaved(false);
           }}
           className="w-full border p-2 mb-2"
-          placeholder="e.g. React, Node, MongoDB"
         />
 
         <label className="font-semibold">Skills I Require</label>
@@ -154,16 +139,13 @@ const EditProfile = () => {
             setSkillsSaved(false);
           }}
           className="w-full border p-2 mb-4"
-          placeholder="e.g. UI Design, Marketing"
         />
 
         <button
           type="button"
           onClick={saveSkills}
           className={`w-full p-2 mb-6 text-white ${
-            skillsSaved
-              ? "bg-green-600"
-              : "bg-blue-600 hover:bg-blue-700"
+            skillsSaved ? "bg-green-600" : "bg-blue-600 hover:bg-blue-700"
           }`}
         >
           {skillsSaved ? "Skills Saved ✅" : "Save Skills"}
@@ -171,46 +153,63 @@ const EditProfile = () => {
 
         {/* PROFILE INFO */}
         <form onSubmit={submit} className="space-y-3">
-          <input
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            className="w-full border p-2"
-            placeholder="Name"
-          />
-          <input
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className="w-full border p-2"
-            placeholder="Email"
-          />
-          <textarea
-            name="bio"
-            value={formData.bio}
-            onChange={handleChange}
-            className="w-full border p-2"
-            placeholder="Bio"
-          />
-          <input
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            className="w-full border p-2"
-            placeholder="Phone"
-          />
-          <input
-            name="city"
-            value={formData.city}
-            onChange={handleChange}
-            className="w-full border p-2"
-            placeholder="City"
-          />
+          <input name="name" value={formData.name} onChange={handleChange} className="w-full border p-2" />
+          <input name="email" value={formData.email} onChange={handleChange} className="w-full border p-2" />
+          <textarea name="bio" value={formData.bio} onChange={handleChange} className="w-full border p-2" />
+          <input name="phone" value={formData.phone} onChange={handleChange} className="w-full border p-2" />
+          <input name="city" value={formData.city} onChange={handleChange} className="w-full border p-2" />
 
-          <button className="w-full bg-green-600 text-white p-2 hover:bg-green-700 transition">
+          <button className="w-full bg-green-600 text-white p-2">
             Save Profile Info
           </button>
         </form>
+
+        {/* COURSES */}
+        <div className="mt-10 border-t pt-6">
+          <h3 className="text-lg font-semibold mb-3">Add Course</h3>
+
+          <input
+            placeholder="Course Title"
+            value={courseTitle}
+            onChange={e => setCourseTitle(e.target.value)}
+            className="w-full border p-2 mb-2"
+          />
+
+          <input
+            placeholder="Price (USD)"
+            type="number"
+            value={coursePrice}
+            onChange={e => setCoursePrice(e.target.value)}
+            className="w-full border p-2 mb-3"
+          />
+
+          {/* COURSE VIDEO UPLOAD */}
+          <label
+            className={`cursor-pointer block text-center px-4 py-2 rounded mb-3 text-white ${
+              courseVideoSelected
+                ? "bg-green-600"
+                : "bg-purple-600 hover:bg-purple-700"
+            }`}
+          >
+            {courseVideoSelected ? "Video Selected ✅" : "Upload Course Video"}
+            <input
+              type="file"
+              className="hidden"
+              onChange={e => {
+                setCourseVideo(e.target.files[0]);
+                setCourseVideoSelected(true);
+              }}
+            />
+          </label>
+
+          <button
+            type="button"
+            onClick={addCourse}
+            className="w-full bg-purple-700 text-white p-2"
+          >
+            Add Course
+          </button>
+        </div>
       </div>
     </>
   );
