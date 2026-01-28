@@ -20,9 +20,23 @@ router.post("/login", userController.loginUser);
 router.get("/profile", getLoggedInUser, userController.getProfile);
 router.put("/profile", getLoggedInUser, userController.updateProfile);
 
+/* ✅ IMAGE UPLOAD ROUTES (THIS WAS MISSING) */
+router.put(
+  "/profile/image",
+  getLoggedInUser,
+  upload.single("image"),
+  userController.uploadProfileImage
+);
+
+router.put(
+  "/profile/cover",
+  getLoggedInUser,
+  upload.single("image"),
+  userController.uploadCoverImage
+);
+
 router.put("/skills", getLoggedInUser, userController.updateSkills);
 
-/* PHASE – COURSES */
 router.post(
   "/courses",
   getLoggedInUser,

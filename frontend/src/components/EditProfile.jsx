@@ -28,20 +28,25 @@ const EditProfile = () => {
   const [courseVideo, setCourseVideo] = useState(null);
   const [courseVideoSelected, setCourseVideoSelected] = useState(false);
 
-  useEffect(() => {
-    getProfileApi().then(res => {
-      setFormData({
-        name: res.data.name || "",
-        email: res.data.email || "",
-        bio: res.data.bio || "",
-        phone: res.data.phone || "",
-        city: res.data.city || ""
-      });
-
-      setSkillsOffered(res.data.skillsOffered?.join(", ") || "");
-      setSkillsRequired(res.data.skillsRequired?.join(", ") || "");
+ useEffect(() => {
+  getProfileApi().then(res => {
+    setFormData({
+      name: res.data.name || "",
+      email: res.data.email || "",
+      bio: res.data.bio || "",
+      phone: res.data.phone || "",
+      city: res.data.city || ""
     });
-  }, []);
+
+    setSkillsOffered(res.data.skillsOffered?.join(", ") || "");
+    setSkillsRequired(res.data.skillsRequired?.join(", ") || "");
+
+    // ✅ RESET upload UI every time EditProfile loads
+    setProfileUploaded(false);
+    setCoverUploaded(false);
+  });
+}, []);
+
 
   const handleChange = e =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -66,8 +71,14 @@ const EditProfile = () => {
     await axios.put(
       "http://localhost:5000/users/skills",
       {
-        skillsOffered: skillsOffered.split(",").map(s => s.trim()).filter(Boolean),
-        skillsRequired: skillsRequired.split(",").map(s => s.trim()).filter(Boolean)
+        skillsOffered: skillsOffered
+          .split(",")
+          .map(s => s.trim())
+          .filter(Boolean),
+        skillsRequired: skillsRequired
+          .split(",")
+          .map(s => s.trim())
+          .filter(Boolean)
       },
       { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
     );
@@ -109,14 +120,38 @@ const EditProfile = () => {
 
         {/* IMAGE UPLOADS */}
         <div className="flex gap-4 mb-6">
-          <label className="cursor-pointer bg-green-600 text-white px-4 py-2 rounded">
-            Upload Profile Picture
-            <input type="file" className="hidden" onChange={e => uploadImage(e, "image")} />
+          <label
+            className={`cursor-pointer px-4 py-2 rounded text-white transition ${
+              profileUploaded
+                ? "bg-gray-500"
+                : "bg-green-600 hover:bg-green-700"
+            }`}
+          >
+            {profileUploaded
+              ? "Profile Picture Uploaded ✅"
+              : "Upload Profile Picture"}
+            <input
+              type="file"
+              className="hidden"
+              onChange={e => uploadImage(e, "image")}
+            />
           </label>
 
-          <label className="cursor-pointer bg-green-600 text-white px-4 py-2 rounded">
-            Upload Cover Photo
-            <input type="file" className="hidden" onChange={e => uploadImage(e, "cover")} />
+          <label
+            className={`cursor-pointer px-4 py-2 rounded text-white transition ${
+              coverUploaded
+                ? "bg-gray-500"
+                : "bg-green-600 hover:bg-green-700"
+            }`}
+          >
+            {coverUploaded
+              ? "Cover Photo Uploaded ✅"
+              : "Upload Cover Photo"}
+            <input
+              type="file"
+              className="hidden"
+              onChange={e => uploadImage(e, "cover")}
+            />
           </label>
         </div>
 
@@ -145,7 +180,9 @@ const EditProfile = () => {
           type="button"
           onClick={saveSkills}
           className={`w-full p-2 mb-6 text-white ${
-            skillsSaved ? "bg-green-600" : "bg-blue-600 hover:bg-blue-700"
+            skillsSaved
+              ? "bg-green-600"
+              : "bg-blue-600 hover:bg-blue-700"
           }`}
         >
           {skillsSaved ? "Skills Saved ✅" : "Save Skills"}
@@ -153,13 +190,43 @@ const EditProfile = () => {
 
         {/* PROFILE INFO */}
         <form onSubmit={submit} className="space-y-3">
-          <input name="name" value={formData.name} onChange={handleChange} className="w-full border p-2" />
-          <input name="email" value={formData.email} onChange={handleChange} className="w-full border p-2" />
-          <textarea name="bio" value={formData.bio} onChange={handleChange} className="w-full border p-2" />
-          <input name="phone" value={formData.phone} onChange={handleChange} className="w-full border p-2" />
-          <input name="city" value={formData.city} onChange={handleChange} className="w-full border p-2" />
+          <input
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            placeholder="Enter your name"
+            className="w-full border p-2"
+          />
+          <input
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="Enter your email"
+            className="w-full border p-2"
+          />
+          <textarea
+            name="bio"
+            value={formData.bio}
+            onChange={handleChange}
+            placeholder="Enter bio"
+            className="w-full border p-2"
+          />
+          <input
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            placeholder="Enter phone number"
+            className="w-full border p-2"
+          />
+          <input
+            name="city"
+            value={formData.city}
+            onChange={handleChange}
+            placeholder="Enter city"
+            className="w-full border p-2"
+          />
 
-          <button className="w-full bg-green-600 text-white p-2">
+          <button className="w-full bg-green-600 text-white p-2 hover:bg-green-700">
             Save Profile Info
           </button>
         </form>
@@ -183,7 +250,6 @@ const EditProfile = () => {
             className="w-full border p-2 mb-3"
           />
 
-          {/* COURSE VIDEO UPLOAD */}
           <label
             className={`cursor-pointer block text-center px-4 py-2 rounded mb-3 text-white ${
               courseVideoSelected
@@ -205,7 +271,7 @@ const EditProfile = () => {
           <button
             type="button"
             onClick={addCourse}
-            className="w-full bg-purple-700 text-white p-2"
+            className="w-full bg-purple-700 text-white p-2 hover:bg-purple-800"
           >
             Add Course
           </button>
