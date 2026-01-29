@@ -1,37 +1,68 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Navbar from "./Navbar";
-import { getUserByIdApi, sendSwapRequestApi } from "../api/userApi";
+import {
+  getUserByIdApi,
+  sendSwapRequestApi,
+  getSwapDealWithUserApi,
+  selectCourseForSwapApi
+} from "../api/userApi";
 
 const UserProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const loggedInUser = JSON.parse(localStorage.getItem("user"));
 
   const [user, setUser] = useState(null);
-  const [sent, setSent] = useState(false);
+  const [deal, setDeal] = useState(null);
+  const [courseSelected, setCourseSelected] = useState(false);
+  const [sent, setSent] = useState(false); // ✅ ADDED BACK
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const load = async () => {
       try {
-        const res = await getUserByIdApi(id);
-        setUser(res.data);
+        const userRes = await getUserByIdApi(id);
+        setUser(userRes.data);
+
+        const dealRes = await getSwapDealWithUserApi(id);
+
+        if (dealRes.data) {
+          setDeal(dealRes.data);
+
+          const isA =
+            dealRes.data.userA === loggedInUser.id &&
+            dealRes.data.courseFromB !== null;
+
+          const isB =
+            dealRes.data.userB === loggedInUser.id &&
+            dealRes.data.courseFromA !== null;
+
+          setCourseSelected(Boolean(isA || isB));
+        } else {
+          setDeal(null);
+        }
       } catch {
         navigate("/users");
       }
     };
-    fetchUser();
-  }, [id, navigate]);
+
+    load();
+  }, [id, navigate, loggedInUser.id]);
 
   const sendRequest = async () => {
-    try {
-      await sendSwapRequestApi(id);
-      setSent(true);
-    } catch {
-      // optional: silently fail or show toast later
-    }
+    await sendSwapRequestApi(id);
+    setSent(true); // ✅ IMMEDIATE UI FEEDBACK
+  };
+
+  const selectCourse = async (courseIndex) => {
+    await selectCourseForSwapApi(deal.dealId, courseIndex);
+    setCourseSelected(true);
   };
 
   if (!user) return null;
+
+  const isSender = deal && deal.userA === loggedInUser.id;
+  const isReceiver = deal && deal.userB === loggedInUser.id;
 
   return (
     <>
@@ -66,67 +97,39 @@ const UserProfile = () => {
             <p className="text-gray-600">{user.email}</p>
           </div>
 
-          {/* SWAP BUTTON */}
-          <button
-            disabled={sent}
-            onClick={sendRequest}
-            className={`px-4 py-2 rounded text-white ${
-              sent
-                ? "bg-gray-500 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
-            }`}
-          >
-            {sent ? "Request Sent ⏳" : "Request Skill Swap"}
-          </button>
-        </div>
+          {/* 🔁 REQUEST BUTTON LOGIC */}
 
-        {/* ABOUT + CONTACT */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white shadow rounded p-6">
-            <h3 className="font-semibold mb-2">About</h3>
-            <p>{user.bio || "No bio added yet."}</p>
-          </div>
+          {!deal && (
+            <button
+              disabled={sent}
+              onClick={sendRequest}
+              className={`px-4 py-2 rounded text-white ${
+                sent
+                  ? "bg-gray-500 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+              }`}
+            >
+              {sent ? "Request Sent ⏳" : "Request Skill Swap"}
+            </button>
+          )}
 
-          <div className="bg-white shadow rounded p-6">
-            <h3 className="font-semibold mb-2">Contact</h3>
-            <p><strong>Phone:</strong> {user.phone || "Not provided"}</p>
-            <p><strong>City:</strong> {user.city || "Not provided"}</p>
-          </div>
-        </div>
+          {deal && isSender && (
+            <button
+              disabled
+              className="px-4 py-2 rounded bg-green-600 text-white"
+            >
+              Request accepted — you can select a course ✔️
+            </button>
+          )}
 
-        {/* SKILLS */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white shadow rounded p-6">
-            <h3 className="font-semibold mb-2">Skills Offered</h3>
-            <div className="flex flex-wrap gap-2">
-              {user.skillsOffered?.length
-                ? user.skillsOffered.map(skill => (
-                    <span
-                      key={skill}
-                      className="bg-blue-100 px-3 py-1 rounded text-sm"
-                    >
-                      {skill}
-                    </span>
-                  ))
-                : "No skills listed"}
-            </div>
-          </div>
-
-          <div className="bg-white shadow rounded p-6">
-            <h3 className="font-semibold mb-2">Skills Required</h3>
-            <div className="flex flex-wrap gap-2">
-              {user.skillsRequired?.length
-                ? user.skillsRequired.map(skill => (
-                    <span
-                      key={skill}
-                      className="bg-red-100 px-3 py-1 rounded text-sm"
-                    >
-                      {skill}
-                    </span>
-                  ))
-                : "No skills listed"}
-            </div>
-          </div>
+          {deal && isReceiver && (
+            <button
+              disabled
+              className="px-4 py-2 rounded bg-green-600 text-white"
+            >
+              You accepted the request ✔️
+            </button>
+          )}
         </div>
 
         {/* COURSES */}
@@ -141,6 +144,21 @@ const UserProfile = () => {
                   <p className="text-gray-600 mb-2">
                     Price: ${course.price}
                   </p>
+
+                  {deal && !courseSelected && (
+                    <button
+                      onClick={() => selectCourse(index)}
+                      className="mb-2 bg-green-600 text-white px-4 py-1 rounded"
+                    >
+                      Select this course for swap
+                    </button>
+                  )}
+
+                  {courseSelected && (
+                    <p className="text-green-600 font-semibold mb-2">
+                      Course selected ✔️
+                    </p>
+                  )}
 
                   <video
                     controls
