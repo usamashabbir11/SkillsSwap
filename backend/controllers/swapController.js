@@ -69,7 +69,6 @@ export const respondToRequest = async (req, res) => {
     message: `${req.user.name} ${action} your skill swap request`
   });
 
-  /* ===================== PHASE 7.1 — CREATE SWAP DEAL ===================== */
   if (action === "accepted") {
     const exists = await SwapDeal.findOne({ request: request._id });
 
@@ -78,8 +77,8 @@ export const respondToRequest = async (req, res) => {
         request: request._id,
         userA: request.from,
         userB: request.to,
-        courseFromA: null, // index of course from User A
-        courseFromB: null  // index of course from User B
+        courseFromA: null,
+        courseFromB: null
       });
     }
   }
@@ -98,19 +97,20 @@ export const selectCourseForSwap = async (req, res) => {
       .json({ success: false, message: "Swap deal not found" });
   }
 
-  const user = await User.findById(req.user._id);
+  const selectingUser = await User.findById(req.user._id);
 
   if (
     typeof courseIndex !== "number" ||
     courseIndex < 0 ||
-    courseIndex >= user.courses.length
+    courseIndex >= selectingUser.courses.length
   ) {
     return res
       .status(400)
       .json({ success: false, message: "Invalid course selection" });
   }
 
-  /* ===================== ROLE-BASED SELECTION ===================== */
+  let courseOwnerId = null;
+  let courseTitle = selectingUser.courses[courseIndex].title;
 
   // User B selects → courseFromA (course owned by User A)
   if (req.user._id.toString() === deal.userB.toString()) {
@@ -121,6 +121,7 @@ export const selectCourseForSwap = async (req, res) => {
     }
 
     deal.courseFromA = courseIndex;
+    courseOwnerId = deal.userA;
   }
 
   // User A selects → courseFromB (course owned by User B)
@@ -132,6 +133,7 @@ export const selectCourseForSwap = async (req, res) => {
     }
 
     deal.courseFromB = courseIndex;
+    courseOwnerId = deal.userB;
   } else {
     return res
       .status(403)
@@ -139,10 +141,17 @@ export const selectCourseForSwap = async (req, res) => {
   }
 
   await deal.save();
+
+  /* ✅ NEW: SEND NOTIFICATION TO COURSE OWNER */
+  await Notification.create({
+    user: courseOwnerId,
+    message: `${selectingUser.name} selected your course "${courseTitle}"`
+  });
+
   res.json({ success: true });
 };
 
-/* ===================== PHASE 7.2 SUPPORT — GET DEAL ===================== */
+/* ===================== GET DEAL WITH USER ===================== */
 export const getSwapDealWithUser = async (req, res) => {
   const otherUserId = req.params.userId;
 
@@ -169,7 +178,7 @@ export const getSwapDealWithUser = async (req, res) => {
   });
 };
 
-/* ===================== PHASE 7.2 SUPPORT — CHECK PENDING REQUEST ===================== */
+/* ===================== CHECK PENDING REQUEST ===================== */
 export const hasPendingSwapRequest = async (req, res) => {
   const otherUserId = req.params.userId;
 
@@ -184,3 +193,4 @@ export const hasPendingSwapRequest = async (req, res) => {
     data: Boolean(exists)
   });
 };
+
