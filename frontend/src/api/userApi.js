@@ -83,10 +83,19 @@ export const getSwapDealWithUserApi = async (userId) => {
   return res.data;
 };
 
-export const selectCourseForSwapApi = async (dealId, courseId) => {
+/* ✅ FIX IS HERE */
+export const selectCourseForSwapApi = async (dealId, courseIndex) => {
   const res = await axios.post(
     `${API_BASE_URL}/swaps/select-course`,
-    { dealId, courseId },
+    { dealId, courseIndex }, // ✅ CORRECT KEY
+    authHeader()
+  );
+  return res.data;
+};
+
+export const hasPendingSwapRequestApi = async (userId) => {
+  const res = await axios.get(
+    `${API_BASE_URL}/swaps/pending-with/${userId}`,
     authHeader()
   );
   return res.data;
@@ -101,12 +110,3 @@ export const getNotificationsApi = async () => {
   );
   return res.data;
 };
-
-export const hasPendingSwapRequestApi = async (userId) => {
-  const res = await axios.get(
-    `${API_BASE_URL}/swaps/pending-with/${userId}`,
-    authHeader()
-  );
-  return res.data;
-};
-

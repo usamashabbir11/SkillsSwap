@@ -20,13 +20,14 @@ const swapDealSchema = new mongoose.Schema(
       required: true
     },
 
+    // ✅ STORE COURSE INDEX (NOT ObjectId)
     courseFromA: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Number,
       default: null
     },
 
     courseFromB: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Number,
       default: null
     }
   },

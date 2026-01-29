@@ -58,8 +58,24 @@ const UserProfile = () => {
     setSent(true);
   };
 
+  /* ✅ FIXED: update deal state locally */
   const selectCourse = async (courseIndex) => {
     await selectCourseForSwapApi(deal.dealId, courseIndex);
+
+    setDeal(prev => {
+      if (!prev) return prev;
+
+      if (prev.userA === loggedInUser.id) {
+        return { ...prev, courseFromB: courseIndex };
+      }
+
+      if (prev.userB === loggedInUser.id) {
+        return { ...prev, courseFromA: courseIndex };
+      }
+
+      return prev;
+    });
+
     setCourseSelected(true);
   };
 
@@ -72,7 +88,6 @@ const UserProfile = () => {
     <>
       <Navbar />
 
-      {/* COVER */}
       <div
         className="h-80 bg-gray-400"
         style={{
@@ -85,7 +100,6 @@ const UserProfile = () => {
       />
 
       <div className="max-w-5xl mx-auto px-6 -mt-20">
-        {/* HEADER */}
         <div className="bg-white shadow rounded p-6 flex items-center gap-6">
           <img
             src={
@@ -116,25 +130,18 @@ const UserProfile = () => {
           )}
 
           {deal && isSender && (
-            <button
-              disabled
-              className="px-4 py-2 rounded bg-green-600 text-white"
-            >
+            <button disabled className="px-4 py-2 rounded bg-green-600 text-white">
               Request accepted — you can select a course ✔️
             </button>
           )}
 
           {deal && isReceiver && (
-            <button
-              disabled
-              className="px-4 py-2 rounded bg-green-600 text-white"
-            >
+            <button disabled className="px-4 py-2 rounded bg-green-600 text-white">
               You accepted the request ✔️
             </button>
           )}
         </div>
 
-        {/* COURSES */}
         <div className="mt-10 bg-white shadow rounded p-6">
           <h3 className="text-xl font-semibold mb-4">Courses</h3>
 
@@ -144,7 +151,6 @@ const UserProfile = () => {
                 <div key={index}>
                   <h4 className="font-semibold">{course.title}</h4>
 
-                  {/* ✅ PRICE RESTORED */}
                   <p className="text-gray-600 mb-2">
                     Price: ${course.price}
                   </p>
