@@ -168,3 +168,19 @@ export const getSwapDealWithUser = async (req, res) => {
     }
   });
 };
+
+/* ===================== PHASE 7.2 SUPPORT — CHECK PENDING REQUEST ===================== */
+export const hasPendingSwapRequest = async (req, res) => {
+  const otherUserId = req.params.userId;
+
+  const exists = await SwapRequest.findOne({
+    from: req.user._id,
+    to: otherUserId,
+    status: "pending"
+  });
+
+  res.json({
+    success: true,
+    data: Boolean(exists)
+  });
+};
