@@ -5,7 +5,8 @@ import {
   getUserByIdApi,
   sendSwapRequestApi,
   getSwapDealWithUserApi,
-  selectCourseForSwapApi
+  selectCourseForSwapApi,
+  hasPendingSwapRequestApi
 } from "../api/userApi";
 
 const UserProfile = () => {
@@ -16,7 +17,7 @@ const UserProfile = () => {
   const [user, setUser] = useState(null);
   const [deal, setDeal] = useState(null);
   const [courseSelected, setCourseSelected] = useState(false);
-  const [sent, setSent] = useState(false); // ✅ ADDED BACK
+  const [sent, setSent] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -40,6 +41,9 @@ const UserProfile = () => {
           setCourseSelected(Boolean(isA || isB));
         } else {
           setDeal(null);
+
+          const pendingRes = await hasPendingSwapRequestApi(id);
+          setSent(pendingRes.data === true);
         }
       } catch {
         navigate("/users");
@@ -51,7 +55,7 @@ const UserProfile = () => {
 
   const sendRequest = async () => {
     await sendSwapRequestApi(id);
-    setSent(true); // ✅ IMMEDIATE UI FEEDBACK
+    setSent(true);
   };
 
   const selectCourse = async (courseIndex) => {
@@ -97,8 +101,6 @@ const UserProfile = () => {
             <p className="text-gray-600">{user.email}</p>
           </div>
 
-          {/* 🔁 REQUEST BUTTON LOGIC */}
-
           {!deal && (
             <button
               disabled={sent}
@@ -141,6 +143,8 @@ const UserProfile = () => {
               {user.courses.map((course, index) => (
                 <div key={index}>
                   <h4 className="font-semibold">{course.title}</h4>
+
+                  {/* ✅ PRICE RESTORED */}
                   <p className="text-gray-600 mb-2">
                     Price: ${course.price}
                   </p>

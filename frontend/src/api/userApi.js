@@ -101,3 +101,12 @@ export const getNotificationsApi = async () => {
   );
   return res.data;
 };
+
+export const hasPendingSwapRequestApi = async (userId) => {
+  const res = await axios.get(
+    `${API_BASE_URL}/swaps/pending-with/${userId}`,
+    authHeader()
+  );
+  return res.data;
+};
+
