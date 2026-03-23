@@ -142,7 +142,6 @@ export const selectCourseForSwap = async (req, res) => {
 
   await deal.save();
 
-  /* ✅ NEW: SEND NOTIFICATION TO COURSE OWNER */
   await Notification.create({
     user: courseOwnerId,
     message: `${selectingUser.name} selected your course "${courseTitle}"`
@@ -194,3 +193,57 @@ export const hasPendingSwapRequest = async (req, res) => {
   });
 };
 
+/* ===================== PHASE 8 — CAN ACCESS COURSE ===================== */
+export const canAccessCourse = async (req, res) => {
+  const { ownerId, courseIndex } = req.params;
+  const requestingUserId = req.user._id.toString();
+  const ownerIdStr = ownerId.toString();
+  const index = parseInt(courseIndex, 10);
+
+  // Rule 1: User owns the course
+  if (requestingUserId === ownerIdStr) {
+    return res.json({ success: true, data: { canAccess: true } });
+  }
+
+  // Rule 2: Check for a fully completed swap deal between the two users
+  // where the requesting user was granted this specific course
+  const deal = await SwapDeal.findOne({
+    $or: [
+      { userA: requestingUserId, userB: ownerIdStr },
+      { userA: ownerIdStr, userB: requestingUserId }
+    ]
+  });
+
+  if (!deal) {
+    return res.json({ success: true, data: { canAccess: false } });
+  }
+
+  // Both sides must have selected a course (deal fully complete)
+  if (deal.courseFromA === null || deal.courseFromB === null) {
+    return res.json({ success: true, data: { canAccess: false } });
+  }
+
+  // Determine which course index was granted to the requesting user
+  // courseFromA = index of a course from userA's library, selected by userB
+  // courseFromB = index of a course from userB's library, selected by userA
+
+  const userAStr = deal.userA.toString();
+  const userBStr = deal.userB.toString();
+
+  let grantedIndex = null;
+
+  if (requestingUserId === userBStr && ownerIdStr === userAStr) {
+    // Requesting user is B, owner is A → B was granted courseFromA
+    grantedIndex = deal.courseFromA;
+  } else if (requestingUserId === userAStr && ownerIdStr === userBStr) {
+    // Requesting user is A, owner is B → A was granted courseFromB
+    grantedIndex = deal.courseFromB;
+  }
+
+  if (grantedIndex === null) {
+    return res.json({ success: true, data: { canAccess: false } });
+  }
+
+  const canAccess = grantedIndex === index;
+  return res.json({ success: true, data: { canAccess } });
+};

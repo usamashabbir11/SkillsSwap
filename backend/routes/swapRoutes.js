@@ -6,7 +6,8 @@ import {
   respondToRequest,
   selectCourseForSwap,
   getSwapDealWithUser,
-  hasPendingSwapRequest
+  hasPendingSwapRequest,
+  canAccessCourse
 } from "../controllers/swapController.js";
 
 const router = express.Router();
@@ -19,5 +20,8 @@ router.post("/respond", getLoggedInUser, respondToRequest);
 router.post("/select-course", getLoggedInUser, selectCourseForSwap);
 router.get("/deal-with/:userId", getLoggedInUser, getSwapDealWithUser);
 router.get("/pending-with/:userId", getLoggedInUser, hasPendingSwapRequest);
+
+/* PHASE 8 */
+router.get("/can-access/:ownerId/:courseIndex", getLoggedInUser, canAccessCourse);
 
 export default router;

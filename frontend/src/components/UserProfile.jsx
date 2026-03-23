@@ -6,7 +6,8 @@ import {
   sendSwapRequestApi,
   getSwapDealWithUserApi,
   selectCourseForSwapApi,
-  hasPendingSwapRequestApi
+  hasPendingSwapRequestApi,
+  canAccessCourseApi
 } from "../api/userApi";
 
 const UserProfile = () => {
@@ -19,11 +20,15 @@ const UserProfile = () => {
   const [courseSelected, setCourseSelected] = useState(false);
   const [sent, setSent] = useState(false);
 
+  // Phase 8: array of booleans, one per course index
+  const [accessList, setAccessList] = useState([]);
+
   useEffect(() => {
     const load = async () => {
       try {
         const userRes = await getUserByIdApi(id);
-        setUser(userRes.data);
+        const loadedUser = userRes.data;
+        setUser(loadedUser);
 
         const dealRes = await getSwapDealWithUserApi(id);
 
@@ -45,6 +50,18 @@ const UserProfile = () => {
           const pendingRes = await hasPendingSwapRequestApi(id);
           setSent(pendingRes.data === true);
         }
+
+        // Phase 8: check access for each course of the visited user
+        if (loadedUser.courses?.length) {
+          const accessResults = await Promise.all(
+            loadedUser.courses.map((_, index) =>
+              canAccessCourseApi(id, index)
+                .then((res) => res.data?.canAccess === true)
+                .catch(() => false)
+            )
+          );
+          setAccessList(accessResults);
+        }
       } catch {
         navigate("/users");
       }
@@ -58,11 +75,10 @@ const UserProfile = () => {
     setSent(true);
   };
 
-  /* ✅ FIXED: update deal state locally */
   const selectCourse = async (courseIndex) => {
     await selectCourseForSwapApi(deal.dealId, courseIndex);
 
-    setDeal(prev => {
+    setDeal((prev) => {
       if (!prev) return prev;
 
       if (prev.userA === loggedInUser.id) {
@@ -77,6 +93,18 @@ const UserProfile = () => {
     });
 
     setCourseSelected(true);
+
+    // Phase 8: re-check access after course selection
+    if (user?.courses?.length) {
+      const accessResults = await Promise.all(
+        user.courses.map((_, index) =>
+          canAccessCourseApi(id, index)
+            .then((res) => res.data?.canAccess === true)
+            .catch(() => false)
+        )
+      );
+      setAccessList(accessResults);
+    }
   };
 
   if (!user) return null;
@@ -130,13 +158,19 @@ const UserProfile = () => {
           )}
 
           {deal && isSender && (
-            <button disabled className="px-4 py-2 rounded bg-green-600 text-white">
+            <button
+              disabled
+              className="px-4 py-2 rounded bg-green-600 text-white"
+            >
               Request accepted — you can select a course ✔️
             </button>
           )}
 
           {deal && isReceiver && (
-            <button disabled className="px-4 py-2 rounded bg-green-600 text-white">
+            <button
+              disabled
+              className="px-4 py-2 rounded bg-green-600 text-white"
+            >
               You accepted the request ✔️
             </button>
           )}
@@ -147,36 +181,50 @@ const UserProfile = () => {
 
           {user.courses?.length ? (
             <div className="space-y-6">
-              {user.courses.map((course, index) => (
-                <div key={index}>
-                  <h4 className="font-semibold">{course.title}</h4>
+              {user.courses.map((course, index) => {
+                const hasAccess = accessList[index] === true;
 
-                  <p className="text-gray-600 mb-2">
-                    Price: ${course.price}
-                  </p>
+                return (
+                  <div key={index} className="border rounded p-4">
+                    <h4 className="font-semibold text-lg">{course.title}</h4>
 
-                  {deal && !courseSelected && (
-                    <button
-                      onClick={() => selectCourse(index)}
-                      className="mb-2 bg-green-600 text-white px-4 py-1 rounded"
-                    >
-                      Select this course for swap
-                    </button>
-                  )}
-
-                  {courseSelected && (
-                    <p className="text-green-600 font-semibold mb-2">
-                      Course selected ✔️
+                    <p className="text-gray-600 mb-3">
+                      Price: ${course.price}
                     </p>
-                  )}
 
-                  <video
-                    controls
-                    className="w-full rounded"
-                    src={`http://localhost:5000${course.video}`}
-                  />
-                </div>
-              ))}
+                    {deal && !courseSelected && (
+                      <button
+                        onClick={() => selectCourse(index)}
+                        className="mb-3 bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700"
+                      >
+                        Select this course for swap
+                      </button>
+                    )}
+
+                    {courseSelected && (
+                      <p className="text-green-600 font-semibold mb-3">
+                        Course selected ✔️
+                      </p>
+                    )}
+
+                    {/* Phase 8: Locked vs Unlocked video */}
+                    {hasAccess ? (
+                      <video
+                        controls
+                        className="w-full rounded"
+                        src={`http://localhost:5000${course.video}`}
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center bg-gray-100 border border-gray-300 rounded w-full py-10 gap-3">
+                        <span className="text-5xl">🔒</span>
+                        <p className="text-gray-600 font-medium text-sm">
+                          Swap or Buy to Unlock
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <p>No courses available.</p>
