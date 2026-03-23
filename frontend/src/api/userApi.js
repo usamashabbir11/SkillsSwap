@@ -83,11 +83,10 @@ export const getSwapDealWithUserApi = async (userId) => {
   return res.data;
 };
 
-/* ✅ FIX IS HERE */
 export const selectCourseForSwapApi = async (dealId, courseIndex) => {
   const res = await axios.post(
     `${API_BASE_URL}/swaps/select-course`,
-    { dealId, courseIndex }, // ✅ CORRECT KEY
+    { dealId, courseIndex },
     authHeader()
   );
   return res.data;
@@ -96,6 +95,16 @@ export const selectCourseForSwapApi = async (dealId, courseIndex) => {
 export const hasPendingSwapRequestApi = async (userId) => {
   const res = await axios.get(
     `${API_BASE_URL}/swaps/pending-with/${userId}`,
+    authHeader()
+  );
+  return res.data;
+};
+
+/* ================= PHASE 8 ================= */
+
+export const canAccessCourseApi = async (ownerId, courseIndex) => {
+  const res = await axios.get(
+    `${API_BASE_URL}/swaps/can-access/${ownerId}/${courseIndex}`,
     authHeader()
   );
   return res.data;
