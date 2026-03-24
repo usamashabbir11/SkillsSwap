@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(find /c/Users/usama/Desktop/SkillsSwap -name .env* -type f)",
-      "Bash(find /c/Users/usama/Desktop/SkillsSwap -maxdepth 2 -name *.config.* -o -name .env* -o -name Dockerfile -o -name docker-compose*)"
-    ]
-  }
-}
