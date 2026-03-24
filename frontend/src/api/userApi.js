@@ -122,6 +122,22 @@ export const adminDeleteUserApi = async (id) => {
   return res.data;
 };
 
+/* ================= PHASE 12 — REVIEWS ================= */
+
+export const submitReviewApi = async (dealId, rating, comment) => {
+  const res = await axios.post(
+    `${API_BASE_URL}/reviews`,
+    { dealId, rating, comment },
+    authHeader()
+  );
+  return res.data;
+};
+
+export const getReviewsForUserApi = async (userId) => {
+  const res = await axios.get(`${API_BASE_URL}/reviews/user/${userId}`, authHeader());
+  return res.data;
+};
+
 /* ================= NOTIFICATIONS ================= */
 
 export const getNotificationsApi = async () => {

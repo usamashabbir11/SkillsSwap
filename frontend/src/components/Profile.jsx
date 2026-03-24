@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "./Navbar";
-import { getProfileApi, deleteOwnProfileApi } from "../api/userApi";
+import { getProfileApi, deleteOwnProfileApi, getReviewsForUserApi } from "../api/userApi";
 
 const Profile = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [reviews, setReviews] = useState([]);
 
   const handleDeleteAccount = async () => {
     if (!window.confirm("Are you sure you want to delete your account? This cannot be undone.")) return;
@@ -19,6 +20,8 @@ const Profile = () => {
       try {
         const res = await getProfileApi();
         setUser(res.data);
+        const reviewsRes = await getReviewsForUserApi(res.data._id);
+        setReviews(reviewsRes.data);
       } catch {
         navigate("/login");
       }
@@ -142,6 +145,36 @@ const Profile = () => {
             <p>No courses added yet.</p>
           )}
         </div>
+
+        {/* PHASE 12 — REVIEWS (read-only) */}
+        <div className="mt-10 mb-10 bg-white shadow rounded p-6">
+          <h3 className="text-xl font-semibold mb-4">Reviews</h3>
+
+          {reviews.length === 0 ? (
+            <p className="text-gray-500">No reviews yet.</p>
+          ) : (
+            <div className="space-y-4">
+              {reviews.map((review) => (
+                <div key={review._id} className="border rounded p-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-semibold">{review.reviewer?.name || "Unknown"}</span>
+                    <span className="text-yellow-400 text-lg">
+                      {"★".repeat(review.rating)}
+                      <span className="text-gray-300">{"★".repeat(5 - review.rating)}</span>
+                    </span>
+                  </div>
+                  {review.comment && (
+                    <p className="text-gray-700 text-sm">{review.comment}</p>
+                  )}
+                  <p className="text-gray-400 text-xs mt-1">
+                    {new Date(review.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
       </div>
     </>
   );
