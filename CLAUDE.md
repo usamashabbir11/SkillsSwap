@@ -88,5 +88,7 @@ Courses are stored as an embedded array inside the `User` document (not a separa
 - Phase 11: Search & Filter — frontend-only filtering in AllUsers by name, skill (offered+required), and city (AND logic, no new backend endpoint)
 - Phase 12: Reviews & Ratings — `Review` model (`reviewer`, `reviewee`, `deal`, `rating` 1–5, `comment`), unique index on `{reviewer, deal}`. `POST /reviews` (submit, validates deal fully complete, user is part of deal, one review per deal). `GET /reviews/user/:userId` (returns reviews with reviewer name populated). Review form shown on UserProfile when deal is fully complete and not yet reviewed. Read-only reviews section on own Profile page.
 
+- Phase 13: Admin Dashboard — `GET /admin/stats` (protected by `requireAdmin`), returns totalUsers, totalSwapRequests, totalCompletedSwaps, totalCourses (aggregated from User.courses arrays), totalReviews. `AdminDashboard.jsx` page with stat cards, redirects non-admins to /users. "Admin Dashboard" link in Navbar only visible when `role === "admin"`.
+
 ## Current Status
-Phase 12 is complete and stable. No bugs. No UI breakage.
+Phase 13 is complete and stable. No bugs. No UI breakage.

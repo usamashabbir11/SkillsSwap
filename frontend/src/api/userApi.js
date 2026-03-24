@@ -138,6 +138,13 @@ export const getReviewsForUserApi = async (userId) => {
   return res.data;
 };
 
+/* ================= PHASE 13 — ADMIN ================= */
+
+export const getAdminStatsApi = async () => {
+  const res = await axios.get(`${API_BASE_URL}/admin/stats`, authHeader());
+  return res.data;
+};
+
 /* ================= NOTIFICATIONS ================= */
 
 export const getNotificationsApi = async () => {
