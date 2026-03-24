@@ -176,6 +176,20 @@ const UserProfile = () => {
           )}
         </div>
 
+        {/* ABOUT + CONTACT */}
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white shadow rounded p-6">
+            <h3 className="font-semibold mb-2">About</h3>
+            <p>{user.bio || "No bio added yet."}</p>
+          </div>
+
+          <div className="bg-white shadow rounded p-6">
+            <h3 className="font-semibold mb-2">Contact</h3>
+            <p><strong>Phone:</strong> {user.phone || "Not provided"}</p>
+            <p><strong>City:</strong> {user.city || "Not provided"}</p>
+          </div>
+        </div>
+
         <div className="mt-10 bg-white shadow rounded p-6">
           <h3 className="text-xl font-semibold mb-4">Courses</h3>
 
