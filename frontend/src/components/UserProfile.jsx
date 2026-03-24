@@ -7,7 +7,9 @@ import {
   getSwapDealWithUserApi,
   selectCourseForSwapApi,
   hasPendingSwapRequestApi,
-  canAccessCourseApi
+  canAccessCourseApi,
+  submitReviewApi,
+  getReviewsForUserApi
 } from "../api/userApi";
 
 const UserProfile = () => {
@@ -22,6 +24,12 @@ const UserProfile = () => {
 
   // Phase 8: array of booleans, one per course index
   const [accessList, setAccessList] = useState([]);
+
+  // Phase 12: reviews
+  const [reviews, setReviews] = useState([]);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -62,6 +70,10 @@ const UserProfile = () => {
           );
           setAccessList(accessResults);
         }
+
+        // Phase 12: load reviews for the visited user
+        const reviewsRes = await getReviewsForUserApi(id);
+        setReviews(reviewsRes.data);
       } catch {
         navigate("/users");
       }
@@ -107,10 +119,22 @@ const UserProfile = () => {
     }
   };
 
+  const handleSubmitReview = async () => {
+    await submitReviewApi(deal.dealId, reviewRating, reviewComment);
+    const reviewsRes = await getReviewsForUserApi(id);
+    setReviews(reviewsRes.data);
+    setReviewSubmitted(true);
+  };
+
   if (!user) return null;
 
   const isSender = deal && deal.userA === loggedInUser.id;
   const isReceiver = deal && deal.userB === loggedInUser.id;
+
+  const dealComplete = deal && deal.courseFromA !== null && deal.courseFromB !== null;
+  const alreadyReviewed = reviews.some(
+    (r) => r.reviewer?._id === loggedInUser.id || r.reviewer === loggedInUser.id
+  );
 
   return (
     <>
@@ -244,6 +268,76 @@ const UserProfile = () => {
             <p>No courses available.</p>
           )}
         </div>
+
+        {/* PHASE 12 — REVIEWS */}
+        <div className="mt-10 mb-10 bg-white shadow rounded p-6">
+          <h3 className="text-xl font-semibold mb-4">Reviews</h3>
+
+          {/* REVIEW FORM — only when deal complete and not yet reviewed */}
+          {dealComplete && !alreadyReviewed && !reviewSubmitted && (
+            <div className="mb-6 border rounded p-4 bg-gray-50">
+              <h4 className="font-semibold mb-3">Leave a Review</h4>
+
+              <div className="flex items-center gap-2 mb-3">
+                <label className="text-sm font-medium">Rating:</label>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setReviewRating(star)}
+                    className={`text-2xl ${star <= reviewRating ? "text-yellow-400" : "text-gray-300"}`}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
+
+              <textarea
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+                placeholder="Write a comment (optional)..."
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 mb-3"
+                rows={3}
+              />
+
+              <button
+                onClick={handleSubmitReview}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                Submit Review
+              </button>
+            </div>
+          )}
+
+          {(alreadyReviewed || reviewSubmitted) && dealComplete && (
+            <p className="text-green-600 font-medium mb-4">You have reviewed this user ✔️</p>
+          )}
+
+          {/* REVIEWS LIST */}
+          {reviews.length === 0 ? (
+            <p className="text-gray-500">No reviews yet.</p>
+          ) : (
+            <div className="space-y-4">
+              {reviews.map((review) => (
+                <div key={review._id} className="border rounded p-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-semibold">{review.reviewer?.name || "Unknown"}</span>
+                    <span className="text-yellow-400 text-lg">
+                      {"★".repeat(review.rating)}
+                      <span className="text-gray-300">{"★".repeat(5 - review.rating)}</span>
+                    </span>
+                  </div>
+                  {review.comment && (
+                    <p className="text-gray-700 text-sm">{review.comment}</p>
+                  )}
+                  <p className="text-gray-400 text-xs mt-1">
+                    {new Date(review.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
       </div>
     </>
   );
