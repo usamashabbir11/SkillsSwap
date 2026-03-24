@@ -66,6 +66,12 @@ const Navbar = () => {
             </span>
           )}
         </button>
+
+        {user?.role === "admin" && (
+          <button onClick={() => navigate("/admin")}>
+            Admin Dashboard
+          </button>
+        )}
       </div>
 
       <button onClick={logout} className="bg-red-500 px-3 py-1 rounded">

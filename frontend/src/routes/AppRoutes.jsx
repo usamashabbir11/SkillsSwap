@@ -11,6 +11,7 @@ import EditProfile from "../components/EditProfile";
 /* ✅ MISSING IMPORTS (THIS WAS THE BUG) */
 import RequestsPage from "../pages/RequestsPage";
 import NotificationsPage from "../pages/NotificationsPage";
+import AdminDashboard from "../pages/AdminDashboard";
 
 const AppRoutes = () => {
   return (
@@ -28,6 +29,9 @@ const AppRoutes = () => {
       {/* PHASE 6 */}
       <Route path="/requests" element={<RequestsPage />} />
       <Route path="/notifications" element={<NotificationsPage />} />
+
+      {/* PHASE 13 */}
+      <Route path="/admin" element={<AdminDashboard />} />
     </Routes>
   );
 };
