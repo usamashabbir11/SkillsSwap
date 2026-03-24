@@ -110,6 +110,18 @@ export const canAccessCourseApi = async (ownerId, courseIndex) => {
   return res.data;
 };
 
+/* ================= PHASE 9 ================= */
+
+export const deleteOwnProfileApi = async () => {
+  const res = await axios.delete(`${API_BASE_URL}/users/profile`, authHeader());
+  return res.data;
+};
+
+export const adminDeleteUserApi = async (id) => {
+  const res = await axios.delete(`${API_BASE_URL}/users/${id}`, authHeader());
+  return res.data;
+};
+
 /* ================= NOTIFICATIONS ================= */
 
 export const getNotificationsApi = async () => {

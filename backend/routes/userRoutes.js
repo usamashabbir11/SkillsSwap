@@ -1,7 +1,7 @@
 import express from "express";
 import multer from "multer";
 import userController from "../controllers/userController.js";
-import getLoggedInUser from "../middlewares/userMiddleware.js";
+import getLoggedInUser, { requireAdmin } from "../middlewares/userMiddleware.js";
 
 const router = express.Router();
 
@@ -46,5 +46,9 @@ router.post(
 
 router.get("/all", getLoggedInUser, userController.getAllUsers);
 router.get("/:id", getLoggedInUser, userController.getUserById);
+
+/* PHASE 9 – DELETE ROUTES */
+router.delete("/profile", getLoggedInUser, userController.deleteOwnProfile);
+router.delete("/:id", getLoggedInUser, requireAdmin, userController.adminDeleteUser);
 
 export default router;

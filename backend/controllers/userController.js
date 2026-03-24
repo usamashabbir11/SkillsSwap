@@ -5,6 +5,9 @@ import { generateToken } from "../utils/token.js";
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 import User from "../models/userModel.js";
+import SwapRequest from "../models/swapRequestModel.js";
+import SwapDeal from "../models/swapDealModel.js";
+import Notification from "../models/notificationModel.js";
 
 /* ===================== REGISTER ===================== */
 const registerUser = async (req, res) => {
@@ -51,7 +54,8 @@ const loginUser = async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        role: user.role
       }
     }
   });
@@ -165,6 +169,39 @@ const getUserById = async (req, res) => {
   res.json({ success: true, data: user });
 };
 
+/* ===================== DELETE OWN PROFILE ===================== */
+const deleteOwnProfile = async (req, res) => {
+  const userId = req.user._id;
+
+  await SwapRequest.deleteMany({ $or: [{ from: userId }, { to: userId }] });
+  await SwapDeal.deleteMany({ $or: [{ userA: userId }, { userB: userId }] });
+  await Notification.deleteMany({ user: userId });
+  await User.findByIdAndDelete(userId);
+
+  res.json({ success: true, message: "Account deleted successfully" });
+};
+
+/* ===================== ADMIN DELETE USER ===================== */
+const adminDeleteUser = async (req, res) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ success: false, message: "Invalid user id" });
+  }
+
+  const target = await User.findById(req.params.id);
+  if (!target) {
+    return res.status(404).json({ success: false, message: "User not found" });
+  }
+
+  const userId = target._id;
+
+  await SwapRequest.deleteMany({ $or: [{ from: userId }, { to: userId }] });
+  await SwapDeal.deleteMany({ $or: [{ userA: userId }, { userB: userId }] });
+  await Notification.deleteMany({ user: userId });
+  await User.findByIdAndDelete(userId);
+
+  res.json({ success: true, message: "User deleted successfully" });
+};
+
 /* ===================== EXPORT ===================== */
 export default {
   registerUser,
@@ -176,5 +213,7 @@ export default {
   updateSkills,
   addCourse,
   getAllUsers,
-  getUserById
+  getUserById,
+  deleteOwnProfile,
+  adminDeleteUser
 };
