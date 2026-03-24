@@ -1,11 +1,19 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "./Navbar";
-import { getAllUsersApi } from "../api/userApi";
+import { getAllUsersApi, adminDeleteUserApi } from "../api/userApi";
 
 const AllUsers = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
+  const loggedInUser = JSON.parse(localStorage.getItem("user"));
+  const isAdmin = loggedInUser?.role === "admin";
+
+  const handleAdminDelete = async (userId) => {
+    if (!window.confirm("Delete this user and all their data?")) return;
+    await adminDeleteUserApi(userId);
+    setUsers((prev) => prev.filter((u) => u._id !== userId));
+  };
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -38,6 +46,15 @@ const AllUsers = () => {
             >
               Visit Profile
             </button>
+
+            {isAdmin && (
+              <button
+                onClick={() => handleAdminDelete(user._id)}
+                className="mt-4 ml-3 bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700"
+              >
+                Delete User
+              </button>
+            )}
           </div>
         ))}
       </div>

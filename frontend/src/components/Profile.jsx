@@ -1,11 +1,18 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "./Navbar";
-import { getProfileApi } from "../api/userApi";
+import { getProfileApi, deleteOwnProfileApi } from "../api/userApi";
 
 const Profile = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm("Are you sure you want to delete your account? This cannot be undone.")) return;
+    await deleteOwnProfileApi();
+    localStorage.clear();
+    navigate("/login");
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -58,6 +65,13 @@ const Profile = () => {
               className="mt-2 bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700 transition"
             >
               Edit Profile
+            </button>
+
+            <button
+              onClick={handleDeleteAccount}
+              className="mt-2 ml-3 bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700 transition"
+            >
+              Delete My Account
             </button>
           </div>
         </div>

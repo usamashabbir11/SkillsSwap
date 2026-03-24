@@ -29,6 +29,13 @@ const userSchema = new mongoose.Schema(
     courses: {
       type: [courseSchema],
       default: []
+    },
+
+    /* PHASE 9 – ROLE */
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user"
     }
   },
   { timestamps: true }
