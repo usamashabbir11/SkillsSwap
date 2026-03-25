@@ -142,6 +142,15 @@ export const submitPurchaseReviewApi = async (revieweeId, rating, comment) => {
   return res.data;
 };
 
+export const submitCourseReviewApi = async (revieweeId, courseIndex, rating, comment) => {
+  const res = await axios.post(
+    `${API_BASE_URL}/reviews`,
+    { revieweeId, courseIndex, rating, comment },
+    authHeader()
+  );
+  return res.data;
+};
+
 export const getReviewsForUserApi = async (userId) => {
   const res = await axios.get(`${API_BASE_URL}/reviews/user/${userId}`, authHeader());
   return res.data;

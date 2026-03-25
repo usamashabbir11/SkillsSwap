@@ -166,6 +166,13 @@ export const getSwapDealWithUser = async (req, res) => {
     return res.json({ success: true, data: null });
   }
 
+  // Courses the logged-in user has already purchased from the visited user
+  const purchases = await Purchase.find({
+    buyer: req.user._id,
+    owner: otherUserId
+  });
+  const purchasedCourseIndexes = purchases.map((p) => p.courseIndex);
+
   res.json({
     success: true,
     data: {
@@ -173,7 +180,8 @@ export const getSwapDealWithUser = async (req, res) => {
       userA: deal.userA,
       userB: deal.userB,
       courseFromA: deal.courseFromA,
-      courseFromB: deal.courseFromB
+      courseFromB: deal.courseFromB,
+      purchasedCourseIndexes
     }
   });
 };

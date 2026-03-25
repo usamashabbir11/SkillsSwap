@@ -5,7 +5,7 @@ import Notification from "../models/notificationModel.js";
 
 /* ===================== SUBMIT REVIEW ===================== */
 export const submitReview = async (req, res) => {
-  const { dealId, revieweeId, rating, comment } = req.body;
+  const { dealId, revieweeId, courseIndex, rating, comment } = req.body;
   const reviewerId = req.user._id;
 
   if (!rating) {
@@ -14,6 +14,57 @@ export const submitReview = async (req, res) => {
 
   if (typeof rating !== "number" || rating < 1 || rating > 5) {
     return res.status(400).json({ success: false, message: "Rating must be a number between 1 and 5" });
+  }
+
+  /* ---- COURSE-BASED PATH ---- */
+  if (revieweeId !== undefined && courseIndex !== undefined && courseIndex !== null) {
+    const idx = typeof courseIndex === "number" ? courseIndex : parseInt(courseIndex, 10);
+
+    // Verify access: purchased OR swap grant
+    const purchased = await Purchase.findOne({ buyer: reviewerId, owner: revieweeId, courseIndex: idx });
+
+    let swapAccess = false;
+    if (!purchased) {
+      const swapDeal = await SwapDeal.findOne({
+        $or: [
+          { userA: reviewerId, userB: revieweeId },
+          { userA: revieweeId, userB: reviewerId }
+        ]
+      });
+      if (swapDeal && swapDeal.courseFromA !== null && swapDeal.courseFromB !== null) {
+        const rStr = reviewerId.toString();
+        const eStr = revieweeId.toString();
+        if (rStr === swapDeal.userB.toString() && eStr === swapDeal.userA.toString()) {
+          swapAccess = swapDeal.courseFromA === idx;
+        } else if (rStr === swapDeal.userA.toString() && eStr === swapDeal.userB.toString()) {
+          swapAccess = swapDeal.courseFromB === idx;
+        }
+      }
+    }
+
+    if (!purchased && !swapAccess) {
+      return res.status(403).json({ success: false, message: "You do not have access to this course" });
+    }
+
+    const existing = await Review.findOne({ reviewer: reviewerId, reviewee: revieweeId, courseIndex: idx });
+    if (existing) {
+      return res.status(400).json({ success: false, message: "You have already reviewed this course" });
+    }
+
+    const review = await Review.create({
+      reviewer: reviewerId,
+      reviewee: revieweeId,
+      courseIndex: idx,
+      rating,
+      comment: comment || ""
+    });
+
+    await Notification.create({
+      user: revieweeId,
+      message: `${req.user.name} gave you a ${rating} star rating`
+    });
+
+    return res.status(201).json({ success: true, data: review });
   }
 
   /* ---- PURCHASE PATH ---- */
