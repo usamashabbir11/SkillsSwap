@@ -2,6 +2,7 @@ import SwapRequest from "../models/swapRequestModel.js";
 import Notification from "../models/notificationModel.js";
 import SwapDeal from "../models/swapDealModel.js";
 import User from "../models/userModel.js";
+import Purchase from "../models/purchaseModel.js";
 
 /* ===================== SEND REQUEST ===================== */
 export const sendSwapRequest = async (req, res) => {
@@ -214,36 +215,29 @@ export const canAccessCourse = async (req, res) => {
     ]
   });
 
-  if (!deal) {
-    return res.json({ success: true, data: { canAccess: false } });
+  if (deal && deal.courseFromA !== null && deal.courseFromB !== null) {
+    const userAStr = deal.userA.toString();
+    const userBStr = deal.userB.toString();
+
+    let grantedIndex = null;
+
+    if (requestingUserId === userBStr && ownerIdStr === userAStr) {
+      grantedIndex = deal.courseFromA;
+    } else if (requestingUserId === userAStr && ownerIdStr === userBStr) {
+      grantedIndex = deal.courseFromB;
+    }
+
+    if (grantedIndex === index) {
+      return res.json({ success: true, data: { canAccess: true } });
+    }
   }
 
-  // Both sides must have selected a course (deal fully complete)
-  if (deal.courseFromA === null || deal.courseFromB === null) {
-    return res.json({ success: true, data: { canAccess: false } });
-  }
+  // Rule 3: Check if the user has purchased this course
+  const purchased = await Purchase.findOne({
+    buyer: requestingUserId,
+    owner: ownerIdStr,
+    courseIndex: index
+  });
 
-  // Determine which course index was granted to the requesting user
-  // courseFromA = index of a course from userA's library, selected by userB
-  // courseFromB = index of a course from userB's library, selected by userA
-
-  const userAStr = deal.userA.toString();
-  const userBStr = deal.userB.toString();
-
-  let grantedIndex = null;
-
-  if (requestingUserId === userBStr && ownerIdStr === userAStr) {
-    // Requesting user is B, owner is A → B was granted courseFromA
-    grantedIndex = deal.courseFromA;
-  } else if (requestingUserId === userAStr && ownerIdStr === userBStr) {
-    // Requesting user is A, owner is B → A was granted courseFromB
-    grantedIndex = deal.courseFromB;
-  }
-
-  if (grantedIndex === null) {
-    return res.json({ success: true, data: { canAccess: false } });
-  }
-
-  const canAccess = grantedIndex === index;
-  return res.json({ success: true, data: { canAccess } });
+  return res.json({ success: true, data: { canAccess: Boolean(purchased) } });
 };
