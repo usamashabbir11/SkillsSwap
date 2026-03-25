@@ -9,7 +9,10 @@ import {
   hasPendingSwapRequestApi,
   canAccessCourseApi,
   submitReviewApi,
-  getReviewsForUserApi
+  submitPurchaseReviewApi,
+  getReviewsForUserApi,
+  getMyPurchasesApi,
+  createCheckoutSessionApi
 } from "../api/userApi";
 
 const UserProfile = () => {
@@ -30,6 +33,7 @@ const UserProfile = () => {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [hasPurchaseFromVisited, setHasPurchaseFromVisited] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -74,6 +78,11 @@ const UserProfile = () => {
         // Phase 12: load reviews for the visited user
         const reviewsRes = await getReviewsForUserApi(id);
         setReviews(reviewsRes.data);
+
+        // Check if logged-in user has purchased any course from the visited user
+        const purchasesRes = await getMyPurchasesApi();
+        const purchased = purchasesRes.data.some((p) => p.owner === id || p.owner?._id === id || p.owner?.toString() === id);
+        setHasPurchaseFromVisited(purchased);
       } catch {
         navigate("/users");
       }
@@ -119,8 +128,21 @@ const UserProfile = () => {
     }
   };
 
+  const handleBuy = async (courseIndex) => {
+    try {
+      const res = await createCheckoutSessionApi(id, courseIndex);
+      window.location.href = res.data.url;
+    } catch (err) {
+      alert(err?.response?.data?.message || "Failed to start checkout");
+    }
+  };
+
   const handleSubmitReview = async () => {
-    await submitReviewApi(deal.dealId, reviewRating, reviewComment);
+    if (dealComplete) {
+      await submitReviewApi(deal.dealId, reviewRating, reviewComment);
+    } else {
+      await submitPurchaseReviewApi(id, reviewRating, reviewComment);
+    }
     const reviewsRes = await getReviewsForUserApi(id);
     setReviews(reviewsRes.data);
     setReviewSubmitted(true);
@@ -245,7 +267,7 @@ const UserProfile = () => {
                       </p>
                     )}
 
-                    {/* Phase 8: Locked vs Unlocked video */}
+                    {/* Phase 8 + 10: Locked vs Unlocked video */}
                     {hasAccess ? (
                       <video
                         controls
@@ -258,6 +280,12 @@ const UserProfile = () => {
                         <p className="text-gray-600 font-medium text-sm">
                           Swap or Buy to Unlock
                         </p>
+                        <button
+                          onClick={() => handleBuy(index)}
+                          className="bg-indigo-600 text-white px-5 py-2 rounded hover:bg-indigo-700 text-sm font-medium"
+                        >
+                          Buy for ${course.price}
+                        </button>
                       </div>
                     )}
                   </div>
@@ -273,8 +301,8 @@ const UserProfile = () => {
         <div className="mt-10 mb-10 bg-white shadow rounded p-6">
           <h3 className="text-xl font-semibold mb-4">Reviews</h3>
 
-          {/* REVIEW FORM — only when deal complete and not yet reviewed */}
-          {dealComplete && !alreadyReviewed && !reviewSubmitted && (
+          {/* REVIEW FORM — when deal complete OR purchased, and not yet reviewed */}
+          {(dealComplete || hasPurchaseFromVisited) && !alreadyReviewed && !reviewSubmitted && (
             <div className="mb-6 border rounded p-4 bg-gray-50">
               <h4 className="font-semibold mb-3">Leave a Review</h4>
 
@@ -308,7 +336,7 @@ const UserProfile = () => {
             </div>
           )}
 
-          {(alreadyReviewed || reviewSubmitted) && dealComplete && (
+          {(alreadyReviewed || reviewSubmitted) && (dealComplete || hasPurchaseFromVisited) && (
             <p className="text-green-600 font-medium mb-4">You have reviewed this user ✔️</p>
           )}
 

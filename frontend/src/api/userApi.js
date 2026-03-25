@@ -133,6 +133,15 @@ export const submitReviewApi = async (dealId, rating, comment) => {
   return res.data;
 };
 
+export const submitPurchaseReviewApi = async (revieweeId, rating, comment) => {
+  const res = await axios.post(
+    `${API_BASE_URL}/reviews`,
+    { revieweeId, rating, comment },
+    authHeader()
+  );
+  return res.data;
+};
+
 export const getReviewsForUserApi = async (userId) => {
   const res = await axios.get(`${API_BASE_URL}/reviews/user/${userId}`, authHeader());
   return res.data;
@@ -142,6 +151,30 @@ export const getReviewsForUserApi = async (userId) => {
 
 export const getAdminStatsApi = async () => {
   const res = await axios.get(`${API_BASE_URL}/admin/stats`, authHeader());
+  return res.data;
+};
+
+/* ================= PHASE 10 — PAYMENTS ================= */
+
+export const createCheckoutSessionApi = async (ownerId, courseIndex) => {
+  const res = await axios.post(
+    `${API_BASE_URL}/payments/create-checkout-session`,
+    { ownerId, courseIndex },
+    authHeader()
+  );
+  return res.data;
+};
+
+export const verifyPaymentApi = async (sessionId) => {
+  const res = await axios.get(
+    `${API_BASE_URL}/payments/verify/${sessionId}`,
+    authHeader()
+  );
+  return res.data;
+};
+
+export const getMyPurchasesApi = async () => {
+  const res = await axios.get(`${API_BASE_URL}/payments/my-purchases`, authHeader());
   return res.data;
 };
 

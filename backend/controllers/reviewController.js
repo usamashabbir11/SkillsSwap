@@ -1,18 +1,52 @@
 import Review from "../models/reviewModel.js";
 import SwapDeal from "../models/swapDealModel.js";
+import Purchase from "../models/purchaseModel.js";
 import Notification from "../models/notificationModel.js";
 
 /* ===================== SUBMIT REVIEW ===================== */
 export const submitReview = async (req, res) => {
-  const { dealId, rating, comment } = req.body;
+  const { dealId, revieweeId, rating, comment } = req.body;
   const reviewerId = req.user._id;
 
-  if (!dealId || !rating) {
-    return res.status(400).json({ success: false, message: "dealId and rating are required" });
+  if (!rating) {
+    return res.status(400).json({ success: false, message: "rating is required" });
   }
 
   if (typeof rating !== "number" || rating < 1 || rating > 5) {
     return res.status(400).json({ success: false, message: "Rating must be a number between 1 and 5" });
+  }
+
+  /* ---- PURCHASE PATH ---- */
+  if (!dealId && revieweeId) {
+    const purchase = await Purchase.findOne({ buyer: reviewerId, owner: revieweeId });
+    if (!purchase) {
+      return res.status(403).json({ success: false, message: "You have not purchased any course from this user" });
+    }
+
+    // One purchase review per reviewer-reviewee pair (deal field absent)
+    const existing = await Review.findOne({ reviewer: reviewerId, reviewee: revieweeId, deal: { $exists: false } });
+    if (existing) {
+      return res.status(400).json({ success: false, message: "You have already reviewed this user" });
+    }
+
+    const review = await Review.create({
+      reviewer: reviewerId,
+      reviewee: revieweeId,
+      rating,
+      comment: comment || ""
+    });
+
+    await Notification.create({
+      user: revieweeId,
+      message: `${req.user.name} gave you a ${rating} star rating`
+    });
+
+    return res.status(201).json({ success: true, data: review });
+  }
+
+  /* ---- SWAP DEAL PATH ---- */
+  if (!dealId) {
+    return res.status(400).json({ success: false, message: "dealId or revieweeId is required" });
   }
 
   const deal = await SwapDeal.findById(dealId);
@@ -35,7 +69,7 @@ export const submitReview = async (req, res) => {
   }
 
   // Reviewee is the other user
-  const revieweeId = reviewerStr === userAStr ? deal.userB : deal.userA;
+  const revieweeIdFromDeal = reviewerStr === userAStr ? deal.userB : deal.userA;
 
   // One review per deal per reviewer
   const existing = await Review.findOne({ reviewer: reviewerId, deal: dealId });
@@ -45,14 +79,14 @@ export const submitReview = async (req, res) => {
 
   const review = await Review.create({
     reviewer: reviewerId,
-    reviewee: revieweeId,
+    reviewee: revieweeIdFromDeal,
     deal: dealId,
     rating,
     comment: comment || ""
   });
 
   await Notification.create({
-    user: revieweeId,
+    user: revieweeIdFromDeal,
     message: `${req.user.name} gave you a ${rating} star rating`
   });
 

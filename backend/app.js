@@ -7,6 +7,7 @@ import swapRoutes from "./routes/swapRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 
 const app = express();
 
@@ -23,5 +24,6 @@ app.use("/swaps", swapRoutes);
 app.use("/notifications", notificationRoutes);
 app.use("/reviews", reviewRoutes);
 app.use("/admin", adminRoutes);
+app.use("/payments", paymentRoutes);
 
 export default app;

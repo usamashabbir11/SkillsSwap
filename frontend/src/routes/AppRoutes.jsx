@@ -12,6 +12,7 @@ import EditProfile from "../components/EditProfile";
 import RequestsPage from "../pages/RequestsPage";
 import NotificationsPage from "../pages/NotificationsPage";
 import AdminDashboard from "../pages/AdminDashboard";
+import PaymentSuccessPage from "../pages/PaymentSuccessPage";
 
 const AppRoutes = () => {
   return (
@@ -32,6 +33,9 @@ const AppRoutes = () => {
 
       {/* PHASE 13 */}
       <Route path="/admin" element={<AdminDashboard />} />
+
+      {/* PHASE 10 */}
+      <Route path="/payment/success" element={<PaymentSuccessPage />} />
     </Routes>
   );
 };
