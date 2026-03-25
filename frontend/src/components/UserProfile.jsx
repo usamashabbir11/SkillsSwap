@@ -8,10 +8,8 @@ import {
   selectCourseForSwapApi,
   hasPendingSwapRequestApi,
   canAccessCourseApi,
-  submitReviewApi,
-  submitPurchaseReviewApi,
+  submitCourseReviewApi,
   getReviewsForUserApi,
-  getMyPurchasesApi,
   createCheckoutSessionApi
 } from "../api/userApi";
 
@@ -22,18 +20,19 @@ const UserProfile = () => {
 
   const [user, setUser] = useState(null);
   const [deal, setDeal] = useState(null);
-  const [courseSelected, setCourseSelected] = useState(false);
+  const [selectedCourseIndex, setSelectedCourseIndex] = useState(null);
   const [sent, setSent] = useState(false);
+  const [purchasedIndexes, setPurchasedIndexes] = useState([]);
 
   // Phase 8: array of booleans, one per course index
   const [accessList, setAccessList] = useState([]);
 
   // Phase 12: reviews
   const [reviews, setReviews] = useState([]);
-  const [reviewRating, setReviewRating] = useState(5);
-  const [reviewComment, setReviewComment] = useState("");
-  const [reviewSubmitted, setReviewSubmitted] = useState(false);
-  const [hasPurchaseFromVisited, setHasPurchaseFromVisited] = useState(false);
+  // Per-course review state keyed by course index
+  const [courseRatings, setCourseRatings] = useState({});
+  const [courseComments, setCourseComments] = useState({});
+  const [courseReviewSubmitted, setCourseReviewSubmitted] = useState({});
 
   useEffect(() => {
     const load = async () => {
@@ -46,16 +45,16 @@ const UserProfile = () => {
 
         if (dealRes.data) {
           setDeal(dealRes.data);
+          setPurchasedIndexes(dealRes.data.purchasedCourseIndexes || []);
 
-          const isA =
-            dealRes.data.userA === loggedInUser.id &&
-            dealRes.data.courseFromB !== null;
-
-          const isB =
-            dealRes.data.userB === loggedInUser.id &&
-            dealRes.data.courseFromA !== null;
-
-          setCourseSelected(Boolean(isA || isB));
+          // Derive which visited-user course index the logged-in user already selected
+          let initialSelectedIndex = null;
+          if (dealRes.data.userA === loggedInUser.id && dealRes.data.courseFromB !== null) {
+            initialSelectedIndex = dealRes.data.courseFromB;
+          } else if (dealRes.data.userB === loggedInUser.id && dealRes.data.courseFromA !== null) {
+            initialSelectedIndex = dealRes.data.courseFromA;
+          }
+          setSelectedCourseIndex(initialSelectedIndex);
         } else {
           setDeal(null);
 
@@ -78,11 +77,6 @@ const UserProfile = () => {
         // Phase 12: load reviews for the visited user
         const reviewsRes = await getReviewsForUserApi(id);
         setReviews(reviewsRes.data);
-
-        // Check if logged-in user has purchased any course from the visited user
-        const purchasesRes = await getMyPurchasesApi();
-        const purchased = purchasesRes.data.some((p) => p.owner === id || p.owner?._id === id || p.owner?.toString() === id);
-        setHasPurchaseFromVisited(purchased);
       } catch {
         navigate("/users");
       }
@@ -113,7 +107,7 @@ const UserProfile = () => {
       return prev;
     });
 
-    setCourseSelected(true);
+    setSelectedCourseIndex(courseIndex);
 
     // Phase 8: re-check access after course selection
     if (user?.courses?.length) {
@@ -137,26 +131,19 @@ const UserProfile = () => {
     }
   };
 
-  const handleSubmitReview = async () => {
-    if (dealComplete) {
-      await submitReviewApi(deal.dealId, reviewRating, reviewComment);
-    } else {
-      await submitPurchaseReviewApi(id, reviewRating, reviewComment);
-    }
+  const handleSubmitCourseReview = async (index) => {
+    const rating = courseRatings[index] ?? 5;
+    const comment = courseComments[index] ?? "";
+    await submitCourseReviewApi(id, index, rating, comment);
     const reviewsRes = await getReviewsForUserApi(id);
     setReviews(reviewsRes.data);
-    setReviewSubmitted(true);
+    setCourseReviewSubmitted((prev) => ({ ...prev, [index]: true }));
   };
 
   if (!user) return null;
 
   const isSender = deal && deal.userA === loggedInUser.id;
   const isReceiver = deal && deal.userB === loggedInUser.id;
-
-  const dealComplete = deal && deal.courseFromA !== null && deal.courseFromB !== null;
-  const alreadyReviewed = reviews.some(
-    (r) => r.reviewer?._id === loggedInUser.id || r.reviewer === loggedInUser.id
-  );
 
   return (
     <>
@@ -252,16 +239,20 @@ const UserProfile = () => {
                       Price: ${course.price}
                     </p>
 
-                    {deal && !courseSelected && (
-                      <button
-                        onClick={() => selectCourse(index)}
-                        className="mb-3 bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700"
-                      >
-                        Select this course for swap
-                      </button>
+                    {deal && selectedCourseIndex === null && (
+                      purchasedIndexes.includes(index) ? (
+                        <p className="text-gray-500 text-sm mb-3">Already purchased</p>
+                      ) : (
+                        <button
+                          onClick={() => selectCourse(index)}
+                          className="mb-3 bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700"
+                        >
+                          Select this course for swap
+                        </button>
+                      )
                     )}
 
-                    {courseSelected && (
+                    {selectedCourseIndex === index && (
                       <p className="text-green-600 font-semibold mb-3">
                         Course selected ✔️
                       </p>
@@ -288,6 +279,70 @@ const UserProfile = () => {
                         </button>
                       </div>
                     )}
+
+                    {/* Per-course review form — only when the user has access */}
+                    {hasAccess && (() => {
+                      const existingReview = reviews.find(
+                        (r) =>
+                          (r.reviewer?._id === loggedInUser.id || r.reviewer === loggedInUser.id) &&
+                          r.courseIndex === index
+                      );
+
+                      if (existingReview) {
+                        return (
+                          <div className="mt-4 border-t pt-4">
+                            <p className="text-sm font-medium text-gray-600 mb-2">Your review for &quot;{course.title}&quot;</p>
+                            <span className="text-yellow-400 text-lg">
+                              {"★".repeat(existingReview.rating)}
+                              <span className="text-gray-300">{"★".repeat(5 - existingReview.rating)}</span>
+                            </span>
+                            {existingReview.comment && (
+                              <p className="text-gray-700 text-sm mt-1">{existingReview.comment}</p>
+                            )}
+                            <p className="text-green-600 text-sm font-medium mt-1">Review submitted ✔️</p>
+                          </div>
+                        );
+                      }
+
+                      if (courseReviewSubmitted[index]) {
+                        return (
+                          <div className="mt-4 border-t pt-4">
+                            <p className="text-green-600 text-sm font-medium">Review submitted ✔️</p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="mt-4 border-t pt-4">
+                          <p className="text-sm font-semibold mb-2">Review &quot;{course.title}&quot;</p>
+                          <div className="flex items-center gap-2 mb-2">
+                            <label className="text-sm font-medium">Rating:</label>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                onClick={() => setCourseRatings((prev) => ({ ...prev, [index]: star }))}
+                                className={`text-2xl ${star <= (courseRatings[index] ?? 5) ? "text-yellow-400" : "text-gray-300"}`}
+                              >
+                                ★
+                              </button>
+                            ))}
+                          </div>
+                          <textarea
+                            value={courseComments[index] ?? ""}
+                            onChange={(e) => setCourseComments((prev) => ({ ...prev, [index]: e.target.value }))}
+                            placeholder="Write a comment (optional)..."
+                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 mb-2"
+                            rows={3}
+                          />
+                          <button
+                            onClick={() => handleSubmitCourseReview(index)}
+                            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
+                          >
+                            Submit Review
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })}
@@ -300,45 +355,6 @@ const UserProfile = () => {
         {/* PHASE 12 — REVIEWS */}
         <div className="mt-10 mb-10 bg-white shadow rounded p-6">
           <h3 className="text-xl font-semibold mb-4">Reviews</h3>
-
-          {/* REVIEW FORM — when deal complete OR purchased, and not yet reviewed */}
-          {(dealComplete || hasPurchaseFromVisited) && !alreadyReviewed && !reviewSubmitted && (
-            <div className="mb-6 border rounded p-4 bg-gray-50">
-              <h4 className="font-semibold mb-3">Leave a Review</h4>
-
-              <div className="flex items-center gap-2 mb-3">
-                <label className="text-sm font-medium">Rating:</label>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={() => setReviewRating(star)}
-                    className={`text-2xl ${star <= reviewRating ? "text-yellow-400" : "text-gray-300"}`}
-                  >
-                    ★
-                  </button>
-                ))}
-              </div>
-
-              <textarea
-                value={reviewComment}
-                onChange={(e) => setReviewComment(e.target.value)}
-                placeholder="Write a comment (optional)..."
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 mb-3"
-                rows={3}
-              />
-
-              <button
-                onClick={handleSubmitReview}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              >
-                Submit Review
-              </button>
-            </div>
-          )}
-
-          {(alreadyReviewed || reviewSubmitted) && (dealComplete || hasPurchaseFromVisited) && (
-            <p className="text-green-600 font-medium mb-4">You have reviewed this user ✔️</p>
-          )}
 
           {/* REVIEWS LIST */}
           {reviews.length === 0 ? (
