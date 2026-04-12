@@ -9,7 +9,7 @@ export const getNotifications = async (req, res) => {
   res.json({ success: true, data: notifications });
 };
 
-/* MARK ALL AS READ */
+// MARK ALL AS READ 
 export const markNotificationsRead = async (req, res) => {
   await Notification.updateMany(
     { user: req.user._id, read: false },

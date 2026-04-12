@@ -8,6 +8,7 @@ import User from "../models/userModel.js";
 import SwapRequest from "../models/swapRequestModel.js";
 import SwapDeal from "../models/swapDealModel.js";
 import Notification from "../models/notificationModel.js";
+import { sendWelcomeEmail, sendAccountDeletedEmail } from "../utils/emailService.js";
 
 /* ===================== REGISTER ===================== */
 const registerUser = async (req, res) => {
@@ -28,6 +29,8 @@ const registerUser = async (req, res) => {
 
   const hashedPassword = await hashPassword(password);
   await userService.createUser({ name, email, password: hashedPassword });
+
+  sendWelcomeEmail(email, name);
 
   res
     .status(201)
@@ -172,11 +175,14 @@ const getUserById = async (req, res) => {
 /* ===================== DELETE OWN PROFILE ===================== */
 const deleteOwnProfile = async (req, res) => {
   const userId = req.user._id;
+  const { name, email } = req.user;
 
   await SwapRequest.deleteMany({ $or: [{ from: userId }, { to: userId }] });
   await SwapDeal.deleteMany({ $or: [{ userA: userId }, { userB: userId }] });
   await Notification.deleteMany({ user: userId });
   await User.findByIdAndDelete(userId);
+
+  sendAccountDeletedEmail(email, name);
 
   res.json({ success: true, message: "Account deleted successfully" });
 };
@@ -193,11 +199,14 @@ const adminDeleteUser = async (req, res) => {
   }
 
   const userId = target._id;
+  const { name, email } = target;
 
   await SwapRequest.deleteMany({ $or: [{ from: userId }, { to: userId }] });
   await SwapDeal.deleteMany({ $or: [{ userA: userId }, { userB: userId }] });
   await Notification.deleteMany({ user: userId });
   await User.findByIdAndDelete(userId);
+
+  sendAccountDeletedEmail(email, name);
 
   res.json({ success: true, message: "User deleted successfully" });
 };

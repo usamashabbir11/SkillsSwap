@@ -2,8 +2,10 @@ import Review from "../models/reviewModel.js";
 import SwapDeal from "../models/swapDealModel.js";
 import Purchase from "../models/purchaseModel.js";
 import Notification from "../models/notificationModel.js";
+import User from "../models/userModel.js";
+import { sendReviewReceivedEmail } from "../utils/emailService.js";
 
-/* ===================== SUBMIT REVIEW ===================== */
+// SUBMIT REVIEW 
 export const submitReview = async (req, res) => {
   const { dealId, revieweeId, courseIndex, rating, comment } = req.body;
   const reviewerId = req.user._id;
@@ -16,7 +18,7 @@ export const submitReview = async (req, res) => {
     return res.status(400).json({ success: false, message: "Rating must be a number between 1 and 5" });
   }
 
-  /* ---- COURSE-BASED PATH ---- */
+  // COURSE-BASED PATH 
   if (revieweeId !== undefined && courseIndex !== undefined && courseIndex !== null) {
     const idx = typeof courseIndex === "number" ? courseIndex : parseInt(courseIndex, 10);
 
@@ -64,6 +66,11 @@ export const submitReview = async (req, res) => {
       message: `${req.user.name} gave you a ${rating} star rating`
     });
 
+    const revieweeUser = await User.findById(revieweeId).select("email");
+    if (revieweeUser) {
+      sendReviewReceivedEmail(revieweeUser.email, req.user.name, rating);
+    }
+
     return res.status(201).json({ success: true, data: review });
   }
 
@@ -91,6 +98,11 @@ export const submitReview = async (req, res) => {
       user: revieweeId,
       message: `${req.user.name} gave you a ${rating} star rating`
     });
+
+    const revieweeUser2 = await User.findById(revieweeId).select("email");
+    if (revieweeUser2) {
+      sendReviewReceivedEmail(revieweeUser2.email, req.user.name, rating);
+    }
 
     return res.status(201).json({ success: true, data: review });
   }
@@ -141,10 +153,15 @@ export const submitReview = async (req, res) => {
     message: `${req.user.name} gave you a ${rating} star rating`
   });
 
+  const revieweeUser3 = await User.findById(revieweeIdFromDeal).select("email");
+  if (revieweeUser3) {
+    sendReviewReceivedEmail(revieweeUser3.email, req.user.name, rating);
+  }
+
   res.status(201).json({ success: true, data: review });
 };
 
-/* ===================== GET REVIEWS FOR USER ===================== */
+// GET REVIEWS FOR USER 
 export const getReviewsForUser = async (req, res) => {
   const reviews = await Review.find({ reviewee: req.params.userId })
     .populate("reviewer", "name")

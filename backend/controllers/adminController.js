@@ -3,7 +3,7 @@ import SwapRequest from "../models/swapRequestModel.js";
 import SwapDeal from "../models/swapDealModel.js";
 import Review from "../models/reviewModel.js";
 
-/* ===================== GET ADMIN STATS ===================== */
+//  GET ADMIN STATS 
 export const getAdminStats = async (req, res) => {
   const totalUsers = await User.countDocuments();
 

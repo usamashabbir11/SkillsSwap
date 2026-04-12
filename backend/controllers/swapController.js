@@ -3,8 +3,14 @@ import Notification from "../models/notificationModel.js";
 import SwapDeal from "../models/swapDealModel.js";
 import User from "../models/userModel.js";
 import Purchase from "../models/purchaseModel.js";
+import {
+  sendSwapRequestEmail,
+  sendSwapAcceptedEmail,
+  sendSwapRejectedEmail,
+  sendCourseSelectedEmail
+} from "../utils/emailService.js";
 
-/* ===================== SEND REQUEST ===================== */
+// SEND REQUEST 
 export const sendSwapRequest = async (req, res) => {
   const { userId } = req.body;
 
@@ -26,10 +32,15 @@ export const sendSwapRequest = async (req, res) => {
     status: "pending"
   });
 
+  const receiver = await User.findById(userId).select("email");
+  if (receiver) {
+    sendSwapRequestEmail(receiver.email, req.user.name);
+  }
+
   res.json({ success: true, data: request });
 };
 
-/* ===================== GET INCOMING REQUESTS ===================== */
+// GET INCOMING REQUESTS 
 export const getIncomingRequests = async (req, res) => {
   const requests = await SwapRequest.find({
     to: req.user._id
@@ -40,7 +51,7 @@ export const getIncomingRequests = async (req, res) => {
   res.json({ success: true, data: requests });
 };
 
-/* ===================== RESPOND TO REQUEST ===================== */
+// RESPOND TO REQUEST 
 export const respondToRequest = async (req, res) => {
   const { requestId, action } = req.body;
 
@@ -70,6 +81,15 @@ export const respondToRequest = async (req, res) => {
     message: `${req.user.name} ${action} your skill swap request`
   });
 
+  const sender = await User.findById(request.from).select("email");
+  if (sender) {
+    if (action === "accepted") {
+      sendSwapAcceptedEmail(sender.email, req.user.name);
+    } else {
+      sendSwapRejectedEmail(sender.email, req.user.name);
+    }
+  }
+
   if (action === "accepted") {
     const exists = await SwapDeal.findOne({ request: request._id });
 
@@ -87,7 +107,7 @@ export const respondToRequest = async (req, res) => {
   res.json({ success: true });
 };
 
-/* ===================== PHASE 7.2 — SELECT COURSE ===================== */
+// PHASE 7.2 — SELECT COURSE 
 export const selectCourseForSwap = async (req, res) => {
   const { dealId, courseIndex } = req.body;
 
@@ -147,6 +167,11 @@ export const selectCourseForSwap = async (req, res) => {
     user: courseOwnerId,
     message: `${selectingUser.name} selected your course "${courseTitle}"`
   });
+
+  const courseOwner = await User.findById(courseOwnerId).select("email");
+  if (courseOwner) {
+    sendCourseSelectedEmail(courseOwner.email, selectingUser.name, courseTitle);
+  }
 
   res.json({ success: true });
 };

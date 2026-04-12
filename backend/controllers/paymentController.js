@@ -1,10 +1,14 @@
 import Stripe from "stripe";
 import User from "../models/userModel.js";
 import Purchase from "../models/purchaseModel.js";
+import {
+  sendCoursePurchasedBuyerEmail,
+  sendCoursePurchasedOwnerEmail
+} from "../utils/emailService.js";
 
 const getStripe = () => new Stripe(process.env.STRIPE_SECRET_KEY);
 
-/* ===================== CREATE CHECKOUT SESSION ===================== */
+//  CREATE CHECKOUT SESSION 
 export const createCheckoutSession = async (req, res) => {
   const { ownerId, courseIndex } = req.body;
 
@@ -66,7 +70,7 @@ export const createCheckoutSession = async (req, res) => {
   res.json({ success: true, data: { url: session.url } });
 };
 
-/* ===================== VERIFY PAYMENT ===================== */
+// VERIFY PAYMENT 
 export const verifyPayment = async (req, res) => {
   const { sessionId } = req.params;
 
@@ -94,12 +98,24 @@ export const verifyPayment = async (req, res) => {
       courseIndex: parseInt(courseIndex, 10),
       stripeSessionId: sessionId
     });
+
+    const [buyer, owner] = await Promise.all([
+      User.findById(buyerId).select("name email"),
+      User.findById(ownerId).select("name email courses")
+    ]);
+
+    if (buyer && owner) {
+      const course = owner.courses[parseInt(courseIndex, 10)];
+      const courseTitle = course ? course.title : "the course";
+      sendCoursePurchasedBuyerEmail(buyer.email, courseTitle, owner.name);
+      sendCoursePurchasedOwnerEmail(owner.email, buyer.name, courseTitle);
+    }
   }
 
   res.json({ success: true, data: { ownerId, courseIndex } });
 };
 
-/* ===================== GET MY PURCHASES ===================== */
+// GET MY PURCHASES 
 export const getMyPurchases = async (req, res) => {
   const purchases = await Purchase.find({ buyer: req.user._id });
   res.json({ success: true, data: purchases });
