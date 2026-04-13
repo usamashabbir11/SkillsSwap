@@ -173,7 +173,7 @@ const Navbar = () => {
         <button
           onClick={logout}
           style={{
-            backgroundColor: "#222222",
+            backgroundColor: "red",
             color: "#ffffff",
             border: "none",
             borderRadius: "4px",
@@ -185,7 +185,7 @@ const Navbar = () => {
             transition: "background 0.15s"
           }}
           onMouseEnter={e => e.currentTarget.style.backgroundColor = "#444444"}
-          onMouseLeave={e => e.currentTarget.style.backgroundColor = "#222222"}
+          onMouseLeave={e => e.currentTarget.style.backgroundColor = "red"}
         >
           Logout
         </button>
