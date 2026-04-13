@@ -12,22 +12,16 @@ const Navbar = () => {
 
   const [requestCount, setRequestCount] = useState(0);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const loadCounts = async () => {
       const requests = await getIncomingRequestsApi();
       const notifications = await getNotificationsApi();
 
-      // 🔑 COUNT ONLY PENDING REQUESTS
-      const pendingRequests = requests.data.filter(
-        r => r.status === "pending"
-      );
-
+      const pendingRequests = requests.data.filter(r => r.status === "pending");
       setRequestCount(pendingRequests.length);
-
-      setNotificationCount(
-        notifications.data.filter(n => !n.read).length
-      );
+      setNotificationCount(notifications.data.filter(n => !n.read).length);
     };
 
     loadCounts();
@@ -41,42 +35,161 @@ const Navbar = () => {
     navigate("/login");
   };
 
+  const handleSearch = (e) => {
+    e.preventDefault();
+    navigate(`/users${searchQuery.trim() ? `?q=${encodeURIComponent(searchQuery.trim())}` : ""}`);
+  };
+
+  const navLinkStyle = (path) => ({
+    position: "relative",
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    padding: "6px 10px",
+    fontSize: "14px",
+    fontWeight: 500,
+    color: location.pathname === path ? "#1dbf73" : "#222222",
+    borderRadius: "4px",
+    transition: "color 0.15s"
+  });
+
   return (
-    <nav className="flex justify-between items-center px-6 py-4 bg-gray-800 text-white">
-      <div className="flex gap-4 items-center">
-        <span className="font-semibold">Welcome {user?.name}</span>
+    <nav style={{
+      position: "sticky",
+      top: 0,
+      zIndex: 1000,
+      backgroundColor: "#ffffff",
+      borderBottom: "1px solid #e9e9e9",
+      height: "64px",
+      display: "flex",
+      alignItems: "center",
+      padding: "0 28px",
+      gap: "20px"
+    }}>
+      {/* Logo */}
+      <div
+        onClick={() => navigate("/users")}
+        style={{ cursor: "pointer", fontWeight: 800, fontSize: "22px", whiteSpace: "nowrap", letterSpacing: "-0.5px" }}
+      >
+        <span style={{ color: "#222222" }}>Skills</span>
+        <span style={{ color: "#1dbf73" }}>Swap</span>
+      </div>
 
-        <button onClick={() => navigate("/profile")}>Profile</button>
-        <button onClick={() => navigate("/users")}>All Users</button>
+      {/* Centered Search Bar */}
+      <form
+        onSubmit={handleSearch}
+        style={{ flex: 1, maxWidth: "460px", margin: "0 auto" }}
+      >
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search skills or users..."
+          style={{
+            width: "100%",
+            border: "1.5px solid #222222",
+            borderRadius: "4px",
+            padding: "8px 14px",
+            fontSize: "14px",
+            outline: "none",
+            color: "#222222",
+            backgroundColor: "#ffffff"
+          }}
+        />
+      </form>
 
-        <button onClick={() => navigate("/requests")} className="relative">
+      {/* Right side nav */}
+      <div style={{ display: "flex", alignItems: "center", gap: "2px", marginLeft: "auto" }}>
+        <span style={{ color: "#777777", fontSize: "13px", marginRight: "6px", whiteSpace: "nowrap" }}>
+          Hi, {user?.name?.split(" ")[0]}
+        </span>
+
+        <button onClick={() => navigate("/profile")} style={navLinkStyle("/profile")}>
+          Profile
+        </button>
+
+        <button onClick={() => navigate("/users")} style={navLinkStyle("/users")}>
+          Explore
+        </button>
+
+        <button
+          onClick={() => navigate("/requests")}
+          style={{ ...navLinkStyle("/requests") }}
+        >
           Requests
           {!hideRequestBadge && requestCount > 0 && (
-            <span className="absolute -top-2 -right-3 bg-red-600 text-xs px-2 rounded-full">
+            <span style={{
+              position: "absolute",
+              top: "0",
+              right: "0",
+              backgroundColor: "#e74c3c",
+              color: "#fff",
+              borderRadius: "50%",
+              fontSize: "10px",
+              width: "16px",
+              height: "16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 700
+            }}>
               {requestCount}
             </span>
           )}
         </button>
 
-        <button onClick={() => navigate("/notifications")} className="relative">
+        <button
+          onClick={() => navigate("/notifications")}
+          style={{ ...navLinkStyle("/notifications") }}
+        >
           Notifications
           {!hideNotificationBadge && notificationCount > 0 && (
-            <span className="absolute -top-2 -right-3 bg-red-600 text-xs px-2 rounded-full">
+            <span style={{
+              position: "absolute",
+              top: "0",
+              right: "0",
+              backgroundColor: "#e74c3c",
+              color: "#fff",
+              borderRadius: "50%",
+              fontSize: "10px",
+              width: "16px",
+              height: "16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 700
+            }}>
               {notificationCount}
             </span>
           )}
         </button>
 
         {user?.role === "admin" && (
-          <button onClick={() => navigate("/admin")}>
-            Admin Dashboard
+          <button onClick={() => navigate("/admin")} style={navLinkStyle("/admin")}>
+            Admin
           </button>
         )}
-      </div>
 
-      <button onClick={logout} className="bg-red-500 px-3 py-1 rounded">
-        Logout
-      </button>
+        <button
+          onClick={logout}
+          style={{
+            backgroundColor: "#222222",
+            color: "#ffffff",
+            border: "none",
+            borderRadius: "4px",
+            padding: "8px 18px",
+            fontSize: "13px",
+            fontWeight: 500,
+            cursor: "pointer",
+            marginLeft: "8px",
+            transition: "background 0.15s"
+          }}
+          onMouseEnter={e => e.currentTarget.style.backgroundColor = "#444444"}
+          onMouseLeave={e => e.currentTarget.style.backgroundColor = "#222222"}
+        >
+          Logout
+        </button>
+      </div>
     </nav>
   );
 };
