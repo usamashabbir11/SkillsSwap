@@ -1,61 +1,54 @@
-Phase 14B — Geo-location Based Sorting.
+Phase 14C — AI Swap Suggestions Engine.
 
 STRICT SAFETY RULES FOR THIS PHASE:
 - Do NOT modify any existing endpoint
-- Do NOT modify any existing controller functions
-- Do NOT modify any existing frontend component logic
-- Do NOT change userModel.js schema in a way that breaks existing users
-- Only ADD new fields, new endpoints, new files
-- Existing users without location data must still work perfectly
+- Do NOT modify any existing controller
+- Do NOT modify any existing model
+- Only CREATE new files and new endpoints
+- Only ADD to existing files where absolutely necessary
 
 WHAT TO BUILD:
 
-1. Update backend/models/userModel.js:
-   - Add ONE new optional field to the schema:
-     location: {
-       type: { type: String, enum: ["Point"], default: "Point" },
-       coordinates: { type: [Number], default: [0, 0] }
-     }
-   - Add index: userSchema.index({ location: "2dsphere" }) after the schema definition
-   - This field is completely optional — existing users without it still work
+1. Create backend/controllers/suggestionController.js:
+   - ONE function: getSuggestions(req, res)
+   - Fetches all users except the logged-in user
+   - For each user calculates a COMBINED score using:
+     * AI match score (cosine similarity) — weight 50%
+     * Distance score (closer = higher score, max 100km range) — weight 30%
+     * Rating score (avgRating / 5 * 100) — weight 20%
+   - Returns top 5 users sorted by combined score descending
+   - Each user in response includes: name, email, city, profileImage, skillsOffered, skillsRequired, avgRating, courses count, combinedScore, distanceKm
+   - If user has no location, distance weight is redistributed to match score
 
-2. Create backend/controllers/geoController.js:
-   - ONE function: getNearbyUsers(req, res)
-   - Gets logged-in user's coordinates from their profile
-   - If logged-in user has no coordinates, return all users sorted by rating instead
-   - Uses MongoDB $near geospatial query to find users sorted by distance
-   - Returns { success: true, data: users[] } with a distanceKm field added to each user
+2. Create backend/routes/suggestionRoutes.js:
+   - GET /suggestions — protected with getLoggedInUser middleware
 
-3. Create backend/routes/geoRoutes.js:
-   - GET /geo/nearby — protected with getLoggedInUser middleware
-
-4. Register in backend/app.js:
-   - Add only ONE new line: app.use("/geo", geoRoutes)
+3. Register in backend/app.js:
+   - Add only ONE new line: app.use("/suggestions", suggestionRoutes)
    - Do not change anything else in app.js
 
-5. Update backend/controllers/userController.js:
-   - In the updateProfile function ONLY, add handling for location coordinates
-   - If req.body.lat and req.body.lng are provided, update user.location.coordinates = [lng, lat]
-   - Do not change anything else in updateProfile
-
-6. Update frontend/src/components/EditProfile.jsx:
-   - Add TWO new optional input fields at the bottom of the form:
-     Latitude and Longitude (with a small helper text "Optional: for location-based matching")
-   - Add a "Use My Location" button that calls navigator.geolocation.getCurrentPosition()
-     and fills in the lat/lng automatically
-   - Send lat and lng in the existing updateProfileApi call
-   - Do not change any other existing field in the form
-
-7. Add ONE new function in frontend/src/api/userApi.js:
-   - getNearbyUsersApi() — calls GET /geo/nearby
-   - Add at the bottom under /* PHASE 14B - GEO LOCATION */
+4. Add ONE new function in frontend/src/api/userApi.js:
+   - getSuggestionsApi() — calls GET /suggestions
+   - Add at the bottom under /* PHASE 14C - AI SUGGESTIONS */
    - Do not change any existing function
 
-8. Update frontend/src/components/AllUsers.jsx:
-   - After loading users, also call getNearbyUsersApi()
-   - If it returns users with distanceKm, sort the displayed users by distance
-   - Show a small "📍 X km away" badge on each user card if distanceKm is available
-   - If user has no location data, show nothing — do not break the card
-   - Do not change any other existing UI element
+5. Create frontend/src/pages/SuggestionsPage.jsx:
+   - A new page that shows AI suggested swap partners
+   - Header: "AI Suggested for You" with a small subtitle "Powered by skill matching + location + ratings"
+   - Shows top 5 user cards in a clean grid
+   - Each card shows: profile photo/initials avatar, name, city + distance, skillsOffered tags (max 3), star rating, combined score as "Match Score: 85%" with a green progress bar
+   - A "Visit Profile" button on each card
+   - If loading: show a loading state
+   - If no suggestions: show "Add your skills and location to get personalized suggestions"
+   - Use the same Fiverr-inspired white theme as the rest of the app
+
+6. Update frontend/src/components/Navbar.jsx:
+   - Add ONE new nav link "AI Matches" that navigates to /suggestions
+   - Only show this link when user is logged in
+   - Do not change any other existing nav link
+
+7. Update frontend/src/routes/AppRoutes.jsx:
+   - Add ONE new protected route: /suggestions → SuggestionsPage
+   - Do not change any existing route
 
 Read all relevant files first. Follow all rules in CLAUDE.md strictly.

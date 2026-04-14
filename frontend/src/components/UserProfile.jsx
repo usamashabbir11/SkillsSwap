@@ -300,6 +300,59 @@ const UserProfile = () => {
           </div>
         </div>
 
+        {/* SKILLS */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginTop: "20px" }}>
+          <div style={sectionStyle}>
+            <h3 style={{ ...sectionTitleStyle, fontSize: "15px", marginBottom: "12px" }}>Skills I Offer</h3>
+            {user.skillsOffered?.length > 0 ? (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {user.skillsOffered.map((skill) => (
+                  <span
+                    key={skill}
+                    style={{
+                      backgroundColor: "#e8f4ff",
+                      color: "#1a6fb5",
+                      borderRadius: "20px",
+                      fontSize: "13px",
+                      padding: "5px 12px",
+                      fontWeight: 500
+                    }}
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p style={{ margin: 0, color: "#aaaaaa", fontSize: "14px" }}>No skills added</p>
+            )}
+          </div>
+
+          <div style={sectionStyle}>
+            <h3 style={{ ...sectionTitleStyle, fontSize: "15px", marginBottom: "12px" }}>Skills I Require</h3>
+            {user.skillsRequired?.length > 0 ? (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {user.skillsRequired.map((skill) => (
+                  <span
+                    key={skill}
+                    style={{
+                      backgroundColor: "#fff0f0",
+                      color: "#c0392b",
+                      borderRadius: "20px",
+                      fontSize: "13px",
+                      padding: "5px 12px",
+                      fontWeight: 500
+                    }}
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p style={{ margin: 0, color: "#aaaaaa", fontSize: "14px" }}>No skills added</p>
+            )}
+          </div>
+        </div>
+
         {/* COURSES */}
         <div style={{ ...sectionStyle, marginTop: "20px" }}>
           <h3 style={sectionTitleStyle}>Courses</h3>

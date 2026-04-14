@@ -19,6 +19,7 @@ import RequestsPage from "../pages/RequestsPage";
 import NotificationsPage from "../pages/NotificationsPage";
 import AdminDashboard from "../pages/AdminDashboard";
 import PaymentSuccessPage from "../pages/PaymentSuccessPage";
+import SuggestionsPage from "../pages/SuggestionsPage";
 
 const AppRoutes = () => {
   return (
@@ -39,6 +40,9 @@ const AppRoutes = () => {
 
       {/* PHASE 13 */}
       <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+
+      {/* PHASE 14C */}
+      <Route path="/suggestions" element={<ProtectedRoute><SuggestionsPage /></ProtectedRoute>} />
 
       {/* PHASE 10 */}
       <Route path="/payment/success" element={<PaymentSuccessPage />} />

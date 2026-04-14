@@ -10,6 +10,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import matchRoutes from "./routes/matchRoutes.js";
 import geoRoutes from "./routes/geoRoutes.js";
+import suggestionRoutes from "./routes/suggestionRoutes.js";
 
 const app = express();
 
@@ -29,5 +30,6 @@ app.use("/admin", adminRoutes);
 app.use("/payments", paymentRoutes);
 app.use("/match", matchRoutes);
 app.use("/geo", geoRoutes);
+app.use("/suggestions", suggestionRoutes);
 
 export default app;

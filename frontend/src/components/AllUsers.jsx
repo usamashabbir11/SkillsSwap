@@ -107,7 +107,7 @@ const AllUsers = () => {
             getAllUsersApi(),
             getProfileApi()
           ]);
-          const usersData = usersResult.data;
+          const usersData = usersResult.data.filter((u) => u._id !== loggedInUser?.id);
           setUsers(usersData);
           setMySkillsRequired(profileResult.data.skillsRequired || []);
 
@@ -451,48 +451,54 @@ const AllUsers = () => {
 
                     {/* SKILLS OFFERED TAGS */}
                     {user.skillsOffered?.length > 0 && (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "4px" }}>
-                        {user.skillsOffered.slice(0, 3).map(skill => (
-                          <span
-                            key={skill}
-                            style={{
-                              backgroundColor: "#e8f4ff",
-                              color: "#1a6fb5",
-                              borderRadius: "20px",
-                              fontSize: "11px",
-                              padding: "3px 9px",
-                              fontWeight: 500
-                            }}
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                        {user.skillsOffered.length > 3 && (
-                          <span style={{ fontSize: "11px", color: "#777777", padding: "3px 2px" }}>
-                            +{user.skillsOffered.length - 3}
-                          </span>
-                        )}
+                      <div style={{ marginBottom: "4px" }}>
+                        <p style={{ fontSize: "11px", color: "#999999", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 4px" }}>Offers</p>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                          {user.skillsOffered.slice(0, 3).map(skill => (
+                            <span
+                              key={skill}
+                              style={{
+                                backgroundColor: "#e8f4ff",
+                                color: "#1a6fb5",
+                                borderRadius: "20px",
+                                fontSize: "11px",
+                                padding: "3px 9px",
+                                fontWeight: 500
+                              }}
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                          {user.skillsOffered.length > 3 && (
+                            <span style={{ fontSize: "11px", color: "#777777", padding: "3px 2px" }}>
+                              +{user.skillsOffered.length - 3}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     )}
 
                     {/* SKILLS REQUIRED TAGS */}
                     {user.skillsRequired?.length > 0 && (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "4px" }}>
-                        {user.skillsRequired.slice(0, 2).map(skill => (
-                          <span
-                            key={skill}
-                            style={{
-                              backgroundColor: "#fff0f0",
-                              color: "#c0392b",
-                              borderRadius: "20px",
-                              fontSize: "11px",
-                              padding: "3px 9px",
-                              fontWeight: 500
-                            }}
-                          >
-                            Needs: {skill}
-                          </span>
-                        ))}
+                      <div style={{ marginBottom: "4px" }}>
+                        <p style={{ fontSize: "11px", color: "#999999", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 4px" }}>Wants</p>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                          {user.skillsRequired.slice(0, 2).map(skill => (
+                            <span
+                              key={skill}
+                              style={{
+                                backgroundColor: "#fff0f0",
+                                color: "#c0392b",
+                                borderRadius: "20px",
+                                fontSize: "11px",
+                                padding: "3px 9px",
+                                fontWeight: 500
+                              }}
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     )}
 

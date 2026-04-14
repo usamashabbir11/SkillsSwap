@@ -212,3 +212,10 @@ export const getNearbyUsersApi = async () => {
   const res = await axios.get(`${API_BASE_URL}/geo/nearby`, authHeader());
   return res.data;
 };
+
+/* PHASE 14C - AI SUGGESTIONS */
+
+export const getSuggestionsApi = async () => {
+  const res = await axios.get(`${API_BASE_URL}/suggestions`, authHeader());
+  return res.data;
+};

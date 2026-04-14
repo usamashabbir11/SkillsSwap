@@ -115,6 +115,10 @@ const Navbar = () => {
               Explore
             </button>
 
+            <button onClick={() => navigate("/suggestions")} style={navLinkStyle("/suggestions")}>
+              AI Matches
+            </button>
+
             <button
               onClick={() => navigate("/requests")}
               style={{ ...navLinkStyle("/requests") }}
