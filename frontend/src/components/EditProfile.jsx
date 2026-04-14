@@ -51,6 +51,8 @@ const EditProfile = () => {
 
   const [profileUploaded, setProfileUploaded] = useState(false);
   const [coverUploaded, setCoverUploaded] = useState(false);
+  const [locationDetecting, setLocationDetecting] = useState(false);
+  const [locationMsg, setLocationMsg] = useState("");
 
   const [courseTitle, setCourseTitle] = useState("");
   const [coursePrice, setCoursePrice] = useState("");
@@ -116,6 +118,48 @@ const EditProfile = () => {
     setCoursePrice("");
     setCourseVideo(null);
     setCourseVideoSelected(false);
+  };
+
+  const detectLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationMsg("Could not detect location. Please enter city manually.");
+      return;
+    }
+    setLocationDetecting(true);
+    setLocationMsg("");
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+          );
+          const data = await res.json();
+          const address = data.address;
+          const area = address.suburb || address.neighbourhood || address.village || address.town || "";
+          const existingCity = formData.city.trim();
+          const fullLocation = area && existingCity
+            ? `${area}, ${existingCity}`
+            : area || existingCity;
+          setFormData(prev => ({
+            ...prev,
+            lat: lat.toString(),
+            lng: lng.toString(),
+            city: fullLocation
+          }));
+          setLocationMsg(`✅ Location detected: ${fullLocation}`);
+        } catch {
+          setLocationMsg("Could not detect location. Please enter city manually.");
+        } finally {
+          setLocationDetecting(false);
+        }
+      },
+      () => {
+        setLocationMsg("Could not detect location. Please enter city manually.");
+        setLocationDetecting(false);
+      }
+    );
   };
 
   const submit = async e => {
@@ -258,53 +302,33 @@ const EditProfile = () => {
               </div>
 
               <div>
-                <label style={labelStyle}>Location <span style={{ fontWeight: 400, color: "#777777" }}>(Optional: for location-based matching)</span></label>
-                <div style={{ display: "flex", gap: "10px", marginBottom: "8px" }}>
-                  <input
-                    name="lat"
-                    value={formData.lat}
-                    onChange={handleChange}
-                    placeholder="Latitude"
-                    type="number"
-                    style={{ ...inputStyle, flex: 1 }}
-                  />
-                  <input
-                    name="lng"
-                    value={formData.lng}
-                    onChange={handleChange}
-                    placeholder="Longitude"
-                    type="number"
-                    style={{ ...inputStyle, flex: 1 }}
-                  />
-                </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (!navigator.geolocation) return;
-                    navigator.geolocation.getCurrentPosition((pos) => {
-                      setFormData(prev => ({
-                        ...prev,
-                        lat: pos.coords.latitude.toString(),
-                        lng: pos.coords.longitude.toString()
-                      }));
-                    });
-                  }}
+                  onClick={detectLocation}
+                  disabled={locationDetecting}
                   style={{
-                    backgroundColor: "#f5f5f5",
-                    color: "#222222",
-                    border: "1px solid #e9e9e9",
+                    border: "1px solid #1dbf73",
+                    color: "#1dbf73",
+                    backgroundColor: "#ffffff",
                     borderRadius: "4px",
-                    padding: "9px 16px",
+                    padding: "8px 16px",
                     fontSize: "13px",
                     fontWeight: 500,
-                    cursor: "pointer",
-                    transition: "background 0.15s"
+                    cursor: locationDetecting ? "not-allowed" : "pointer",
+                    transition: "all 0.15s"
                   }}
-                  onMouseEnter={e => e.currentTarget.style.backgroundColor = "#e9e9e9"}
-                  onMouseLeave={e => e.currentTarget.style.backgroundColor = "#f5f5f5"}
                 >
-                  Use My Location
+                  {locationDetecting ? "Detecting..." : "📍 Detect My Location"}
                 </button>
+                {locationMsg && (
+                  <p style={{
+                    margin: "8px 0 0",
+                    fontSize: "13px",
+                    color: locationMsg.startsWith("✅") ? "#1dbf73" : "#e74c3c"
+                  }}>
+                    {locationMsg}
+                  </p>
+                )}
               </div>
 
               <button

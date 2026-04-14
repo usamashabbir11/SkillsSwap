@@ -1,54 +1,14 @@
-Phase 14C — AI Swap Suggestions Engine.
+In frontend/src/components/EditProfile.jsx, change the location detection logic.
 
-STRICT SAFETY RULES FOR THIS PHASE:
-- Do NOT modify any existing endpoint
-- Do NOT modify any existing controller
-- Do NOT modify any existing model
-- Only CREATE new files and new endpoints
-- Only ADD to existing files where absolutely necessary
+Current behavior: detectLocation overwrites the city field completely.
 
-WHAT TO BUILD:
+New behavior:
+- User types their city name manually in the city field (e.g. "Lahore")
+- When user clicks "Detect My Location", it detects the precise area/suburb only
+- Then combine: area + ", " + existing city value
+- Example: user typed "Lahore", detection finds "Gulberg" → city field becomes "Gulberg, Lahore"
+- If city field is empty and detection finds area → just use the area
+- If detection finds nothing → keep existing city field unchanged
+- Success message: "✅ Location detected: Gulberg, Lahore"
 
-1. Create backend/controllers/suggestionController.js:
-   - ONE function: getSuggestions(req, res)
-   - Fetches all users except the logged-in user
-   - For each user calculates a COMBINED score using:
-     * AI match score (cosine similarity) — weight 50%
-     * Distance score (closer = higher score, max 100km range) — weight 30%
-     * Rating score (avgRating / 5 * 100) — weight 20%
-   - Returns top 5 users sorted by combined score descending
-   - Each user in response includes: name, email, city, profileImage, skillsOffered, skillsRequired, avgRating, courses count, combinedScore, distanceKm
-   - If user has no location, distance weight is redistributed to match score
-
-2. Create backend/routes/suggestionRoutes.js:
-   - GET /suggestions — protected with getLoggedInUser middleware
-
-3. Register in backend/app.js:
-   - Add only ONE new line: app.use("/suggestions", suggestionRoutes)
-   - Do not change anything else in app.js
-
-4. Add ONE new function in frontend/src/api/userApi.js:
-   - getSuggestionsApi() — calls GET /suggestions
-   - Add at the bottom under /* PHASE 14C - AI SUGGESTIONS */
-   - Do not change any existing function
-
-5. Create frontend/src/pages/SuggestionsPage.jsx:
-   - A new page that shows AI suggested swap partners
-   - Header: "AI Suggested for You" with a small subtitle "Powered by skill matching + location + ratings"
-   - Shows top 5 user cards in a clean grid
-   - Each card shows: profile photo/initials avatar, name, city + distance, skillsOffered tags (max 3), star rating, combined score as "Match Score: 85%" with a green progress bar
-   - A "Visit Profile" button on each card
-   - If loading: show a loading state
-   - If no suggestions: show "Add your skills and location to get personalized suggestions"
-   - Use the same Fiverr-inspired white theme as the rest of the app
-
-6. Update frontend/src/components/Navbar.jsx:
-   - Add ONE new nav link "AI Matches" that navigates to /suggestions
-   - Only show this link when user is logged in
-   - Do not change any other existing nav link
-
-7. Update frontend/src/routes/AppRoutes.jsx:
-   - Add ONE new protected route: /suggestions → SuggestionsPage
-   - Do not change any existing route
-
-Read all relevant files first. Follow all rules in CLAUDE.md strictly.
+Only change the detectLocation function. Do not touch anything else in the file. Follow all rules in CLAUDE.md strictly.

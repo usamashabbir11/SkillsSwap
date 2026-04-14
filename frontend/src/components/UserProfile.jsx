@@ -57,7 +57,7 @@ const UserProfile = () => {
 
         try {
           const geoRes = await getNearbyUsersApi();
-          const match = (geoRes.data || []).find((u) => u._id === id);
+          const match = (geoRes.data || []).find((u) => String(u._id) === String(id));
           if (match?.distanceKm != null) setDistanceKm(match.distanceKm);
         } catch {
           // geo is optional — silently ignore
