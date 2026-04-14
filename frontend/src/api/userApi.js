@@ -36,7 +36,9 @@ export const updateProfileApi = async (data) => {
 };
 
 export const getAllUsersApi = async () => {
-  const res = await axios.get(`${API_BASE_URL}/users/all`, authHeader());
+  const token = getToken();
+  const config = token ? authHeader() : {};
+  const res = await axios.get(`${API_BASE_URL}/users/all`, config);
   return res.data;
 };
 

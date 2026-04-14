@@ -1,5 +1,10 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 
+const ProtectedRoute = ({ children }) => {
+  const user = JSON.parse(localStorage.getItem("user"));
+  return user ? children : <Navigate to="/" replace />;
+};
+
 import LandingPage from "../pages/LandingPage";
 import RegisterPage from "../pages/RegisterPage";
 import LoginPage from "../pages/LoginPage";
@@ -22,18 +27,18 @@ const AppRoutes = () => {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
-      <Route path="/profile" element={<ProfilePage />} />
-      <Route path="/profile/edit" element={<EditProfile />} />
+      <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+      <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
 
       <Route path="/users" element={<AllUsers />} />
-      <Route path="/users/:id" element={<UserProfile />} />
+      <Route path="/users/:id" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
 
       {/* PHASE 6 */}
-      <Route path="/requests" element={<RequestsPage />} />
-      <Route path="/notifications" element={<NotificationsPage />} />
+      <Route path="/requests" element={<ProtectedRoute><RequestsPage /></ProtectedRoute>} />
+      <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
 
       {/* PHASE 13 */}
-      <Route path="/admin" element={<AdminDashboard />} />
+      <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
 
       {/* PHASE 10 */}
       <Route path="/payment/success" element={<PaymentSuccessPage />} />

@@ -87,6 +87,7 @@ const AllUsers = () => {
   const [activeCategory, setActiveCategory] = useState(null); // null = "All"
   const [showAll, setShowAll] = useState(false);
   const [mySkillsRequired, setMySkillsRequired] = useState([]);
+  const [guestMsg, setGuestMsg] = useState(null);
   const loggedInUser = JSON.parse(localStorage.getItem("user"));
   const isAdmin = loggedInUser?.role === "admin";
 
@@ -99,18 +100,23 @@ const AllUsers = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const [usersResult, profileResult] = await Promise.all([
-          getAllUsersApi(),
-          getProfileApi()
-        ]);
-        setUsers(usersResult.data);
-        setMySkillsRequired(profileResult.data.skillsRequired || []);
+        if (loggedInUser) {
+          const [usersResult, profileResult] = await Promise.all([
+            getAllUsersApi(),
+            getProfileApi()
+          ]);
+          setUsers(usersResult.data);
+          setMySkillsRequired(profileResult.data.skillsRequired || []);
+        } else {
+          const usersResult = await getAllUsersApi();
+          setUsers(usersResult.data);
+        }
       } catch {
-        navigate("/login");
+        // silently fail — do not redirect guests
       }
     };
     fetchUsers();
-  }, [navigate]);
+  }, []);
 
   const handleCategoryClick = (categoryName) => {
     if (activeCategory === categoryName) {
@@ -460,9 +466,16 @@ const AllUsers = () => {
                     )}
 
                     {/* ACTIONS */}
-                    <div style={{ marginTop: "14px", display: "flex", gap: "8px" }}>
+                    <div style={{ marginTop: "14px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <div style={{ display: "flex", gap: "8px" }}>
                       <button
-                        onClick={() => navigate(`/users/${user._id}`)}
+                        onClick={() => {
+                          if (!loggedInUser) {
+                            setGuestMsg(user._id);
+                            return;
+                          }
+                          navigate(`/users/${user._id}`);
+                        }}
                         style={{
                           flex: 1,
                           backgroundColor: "#1dbf73",
@@ -500,6 +513,12 @@ const AllUsers = () => {
                         >
                           Delete
                         </button>
+                      )}
+                      </div>
+                      {guestMsg === user._id && (
+                        <p style={{ margin: 0, fontSize: "12px", color: "#e67e22", textAlign: "center" }}>
+                          Sign in to visit profiles
+                        </p>
                       )}
                     </div>
                   </div>

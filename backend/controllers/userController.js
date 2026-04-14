@@ -150,7 +150,8 @@ const addCourse = async (req, res) => {
 
 /* ===================== GET ALL USERS ===================== */
 const getAllUsers = async (req, res) => {
-  const users = await User.find({ _id: { $ne: req.user._id } });
+  const query = req.user ? { _id: { $ne: req.user._id } } : {};
+  const users = await User.find(query);
   res.json({ success: true, data: users });
 };
 

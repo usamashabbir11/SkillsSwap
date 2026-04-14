@@ -44,7 +44,7 @@ router.post(
   userController.addCourse
 );
 
-router.get("/all", getLoggedInUser, userController.getAllUsers);
+router.get("/all", userController.getAllUsers);
 router.get("/:id", getLoggedInUser, userController.getUserById);
 
 /* PHASE 9 – DELETE ROUTES */

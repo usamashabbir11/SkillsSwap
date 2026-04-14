@@ -26,7 +26,7 @@ const Profile = () => {
     if (!window.confirm("Are you sure you want to delete your account? This cannot be undone.")) return;
     await deleteOwnProfileApi();
     localStorage.clear();
-    navigate("/login");
+    navigate("/");
   };
 
   useEffect(() => {
@@ -37,7 +37,7 @@ const Profile = () => {
         const reviewsRes = await getReviewsForUserApi(res.data._id);
         setReviews(reviewsRes.data);
       } catch {
-        navigate("/login");
+        navigate("/");
       }
     };
     fetchProfile();

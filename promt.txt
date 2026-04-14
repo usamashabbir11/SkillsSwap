@@ -1,0 +1,18 @@
+I want guests (non-logged-in users) to be able to browse the /users page and see all user cards. When they try to do anything that requires auth, the app should handle it gracefully.
+
+Changes needed:
+
+1. frontend/src/components/AllUsers.jsx
+- Remove any redirect to /login for non-logged-in users
+- Allow the page to load and show all user cards for guests
+- When a guest clicks "Visit Profile" button, instead of navigating to the profile, show a small message under the button saying "Sign in to visit profiles" — do not navigate away
+
+2. frontend/src/routes/AppRoutes.jsx
+- Make /users route accessible without login — no auth check
+- All other protected routes (/profile, /profile/edit, /requests, /notifications, /admin, /users/:id) still redirect to / if not logged in
+
+3. frontend/src/components/Navbar.jsx
+- If user is not logged in, show "Sign In" and "Join Free" buttons in navbar instead of the logged-in links
+- Clicking Sign In or Join Free on the navbar should navigate to / (landing page) where the modal is
+
+Read AllUsers.jsx, AppRoutes.jsx and Navbar.jsx first before making any changes. Do not touch any backend files. Do not break any existing features for logged-in users. Follow all rules in CLAUDE.md strictly.
