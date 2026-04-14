@@ -8,6 +8,8 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
+import matchRoutes from "./routes/matchRoutes.js";
+import geoRoutes from "./routes/geoRoutes.js";
 
 const app = express();
 
@@ -25,5 +27,7 @@ app.use("/notifications", notificationRoutes);
 app.use("/reviews", reviewRoutes);
 app.use("/admin", adminRoutes);
 app.use("/payments", paymentRoutes);
+app.use("/match", matchRoutes);
+app.use("/geo", geoRoutes);
 
 export default app;

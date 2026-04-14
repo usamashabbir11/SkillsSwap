@@ -71,7 +71,7 @@ const getProfile = async (req, res) => {
 
 /* ===================== UPDATE PROFILE INFO ===================== */
 const updateProfile = async (req, res) => {
-  const { name, email, bio, phone, city } = req.body;
+  const { name, email, bio, phone, city, lat, lng } = req.body;
   const user = await User.findById(req.user._id);
 
   user.name = name ?? user.name;
@@ -79,6 +79,10 @@ const updateProfile = async (req, res) => {
   user.bio = bio ?? user.bio;
   user.phone = phone ?? user.phone;
   user.city = city ?? user.city;
+
+  if (lat != null && lng != null && lat !== "" && lng !== "") {
+    user.location = { type: "Point", coordinates: [parseFloat(lng), parseFloat(lat)] };
+  }
 
   await user.save();
   res.json({ success: true, data: user });

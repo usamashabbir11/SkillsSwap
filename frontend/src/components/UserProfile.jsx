@@ -10,7 +10,8 @@ import {
   canAccessCourseApi,
   submitCourseReviewApi,
   getReviewsForUserApi,
-  createCheckoutSessionApi
+  createCheckoutSessionApi,
+  getNearbyUsersApi
 } from "../api/userApi";
 
 const sectionStyle = {
@@ -40,6 +41,8 @@ const UserProfile = () => {
 
   const [accessList, setAccessList] = useState([]);
 
+  const [distanceKm, setDistanceKm] = useState(null);
+
   const [reviews, setReviews] = useState([]);
   const [courseRatings, setCourseRatings] = useState({});
   const [courseComments, setCourseComments] = useState({});
@@ -51,6 +54,14 @@ const UserProfile = () => {
         const userRes = await getUserByIdApi(id);
         const loadedUser = userRes.data;
         setUser(loadedUser);
+
+        try {
+          const geoRes = await getNearbyUsersApi();
+          const match = (geoRes.data || []).find((u) => u._id === id);
+          if (match?.distanceKm != null) setDistanceKm(match.distanceKm);
+        } catch {
+          // geo is optional — silently ignore
+        }
 
         const dealRes = await getSwapDealWithUserApi(id);
 
@@ -204,6 +215,11 @@ const UserProfile = () => {
               )}
             </div>
             <p style={{ margin: "4px 0 0", color: "#777777", fontSize: "14px" }}>{user.email}</p>
+            {user.city && (
+              <p style={{ margin: "6px 0 0", fontSize: "13px", color: "#777777" }}>
+                📍 {user.city}{distanceKm != null ? ` · ${distanceKm} km away` : ""}
+              </p>
+            )}
           </div>
 
           {/* SWAP ACTION BUTTON */}

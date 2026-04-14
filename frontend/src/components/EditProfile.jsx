@@ -40,7 +40,9 @@ const EditProfile = () => {
     email: "",
     bio: "",
     phone: "",
-    city: ""
+    city: "",
+    lat: "",
+    lng: ""
   });
 
   const [skillsOffered, setSkillsOffered] = useState("");
@@ -62,7 +64,9 @@ const EditProfile = () => {
         email: res.data.email || "",
         bio: res.data.bio || "",
         phone: res.data.phone || "",
-        city: res.data.city || ""
+        city: res.data.city || "",
+        lat: res.data.location?.coordinates?.[1] || "",
+        lng: res.data.location?.coordinates?.[0] || ""
       });
       setSkillsOffered(res.data.skillsOffered?.join(", ") || "");
       setSkillsRequired(res.data.skillsRequired?.join(", ") || "");
@@ -251,6 +255,56 @@ const EditProfile = () => {
               <div>
                 <label style={labelStyle}>City</label>
                 <input name="city" value={formData.city} onChange={handleChange} placeholder="Enter city" style={inputStyle} />
+              </div>
+
+              <div>
+                <label style={labelStyle}>Location <span style={{ fontWeight: 400, color: "#777777" }}>(Optional: for location-based matching)</span></label>
+                <div style={{ display: "flex", gap: "10px", marginBottom: "8px" }}>
+                  <input
+                    name="lat"
+                    value={formData.lat}
+                    onChange={handleChange}
+                    placeholder="Latitude"
+                    type="number"
+                    style={{ ...inputStyle, flex: 1 }}
+                  />
+                  <input
+                    name="lng"
+                    value={formData.lng}
+                    onChange={handleChange}
+                    placeholder="Longitude"
+                    type="number"
+                    style={{ ...inputStyle, flex: 1 }}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!navigator.geolocation) return;
+                    navigator.geolocation.getCurrentPosition((pos) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        lat: pos.coords.latitude.toString(),
+                        lng: pos.coords.longitude.toString()
+                      }));
+                    });
+                  }}
+                  style={{
+                    backgroundColor: "#f5f5f5",
+                    color: "#222222",
+                    border: "1px solid #e9e9e9",
+                    borderRadius: "4px",
+                    padding: "9px 16px",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    transition: "background 0.15s"
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.backgroundColor = "#e9e9e9"}
+                  onMouseLeave={e => e.currentTarget.style.backgroundColor = "#f5f5f5"}
+                >
+                  Use My Location
+                </button>
               </div>
 
               <button

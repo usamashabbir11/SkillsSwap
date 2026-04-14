@@ -1,18 +1,61 @@
-I want guests (non-logged-in users) to be able to browse the /users page and see all user cards. When they try to do anything that requires auth, the app should handle it gracefully.
+Phase 14B — Geo-location Based Sorting.
 
-Changes needed:
+STRICT SAFETY RULES FOR THIS PHASE:
+- Do NOT modify any existing endpoint
+- Do NOT modify any existing controller functions
+- Do NOT modify any existing frontend component logic
+- Do NOT change userModel.js schema in a way that breaks existing users
+- Only ADD new fields, new endpoints, new files
+- Existing users without location data must still work perfectly
 
-1. frontend/src/components/AllUsers.jsx
-- Remove any redirect to /login for non-logged-in users
-- Allow the page to load and show all user cards for guests
-- When a guest clicks "Visit Profile" button, instead of navigating to the profile, show a small message under the button saying "Sign in to visit profiles" — do not navigate away
+WHAT TO BUILD:
 
-2. frontend/src/routes/AppRoutes.jsx
-- Make /users route accessible without login — no auth check
-- All other protected routes (/profile, /profile/edit, /requests, /notifications, /admin, /users/:id) still redirect to / if not logged in
+1. Update backend/models/userModel.js:
+   - Add ONE new optional field to the schema:
+     location: {
+       type: { type: String, enum: ["Point"], default: "Point" },
+       coordinates: { type: [Number], default: [0, 0] }
+     }
+   - Add index: userSchema.index({ location: "2dsphere" }) after the schema definition
+   - This field is completely optional — existing users without it still work
 
-3. frontend/src/components/Navbar.jsx
-- If user is not logged in, show "Sign In" and "Join Free" buttons in navbar instead of the logged-in links
-- Clicking Sign In or Join Free on the navbar should navigate to / (landing page) where the modal is
+2. Create backend/controllers/geoController.js:
+   - ONE function: getNearbyUsers(req, res)
+   - Gets logged-in user's coordinates from their profile
+   - If logged-in user has no coordinates, return all users sorted by rating instead
+   - Uses MongoDB $near geospatial query to find users sorted by distance
+   - Returns { success: true, data: users[] } with a distanceKm field added to each user
 
-Read AllUsers.jsx, AppRoutes.jsx and Navbar.jsx first before making any changes. Do not touch any backend files. Do not break any existing features for logged-in users. Follow all rules in CLAUDE.md strictly.
+3. Create backend/routes/geoRoutes.js:
+   - GET /geo/nearby — protected with getLoggedInUser middleware
+
+4. Register in backend/app.js:
+   - Add only ONE new line: app.use("/geo", geoRoutes)
+   - Do not change anything else in app.js
+
+5. Update backend/controllers/userController.js:
+   - In the updateProfile function ONLY, add handling for location coordinates
+   - If req.body.lat and req.body.lng are provided, update user.location.coordinates = [lng, lat]
+   - Do not change anything else in updateProfile
+
+6. Update frontend/src/components/EditProfile.jsx:
+   - Add TWO new optional input fields at the bottom of the form:
+     Latitude and Longitude (with a small helper text "Optional: for location-based matching")
+   - Add a "Use My Location" button that calls navigator.geolocation.getCurrentPosition()
+     and fills in the lat/lng automatically
+   - Send lat and lng in the existing updateProfileApi call
+   - Do not change any other existing field in the form
+
+7. Add ONE new function in frontend/src/api/userApi.js:
+   - getNearbyUsersApi() — calls GET /geo/nearby
+   - Add at the bottom under /* PHASE 14B - GEO LOCATION */
+   - Do not change any existing function
+
+8. Update frontend/src/components/AllUsers.jsx:
+   - After loading users, also call getNearbyUsersApi()
+   - If it returns users with distanceKm, sort the displayed users by distance
+   - Show a small "📍 X km away" badge on each user card if distanceKm is available
+   - If user has no location data, show nothing — do not break the card
+   - Do not change any other existing UI element
+
+Read all relevant files first. Follow all rules in CLAUDE.md strictly.

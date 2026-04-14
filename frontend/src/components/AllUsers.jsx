@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "./Navbar";
-import { getAllUsersApi, adminDeleteUserApi, getProfileApi } from "../api/userApi";
+import { getAllUsersApi, adminDeleteUserApi, getProfileApi, getMatchScoreApi, getNearbyUsersApi } from "../api/userApi";
 
 const coverGradients = [
   "linear-gradient(135deg, #1dbf73 0%, #16a085 100%)",
@@ -87,6 +87,8 @@ const AllUsers = () => {
   const [activeCategory, setActiveCategory] = useState(null); // null = "All"
   const [showAll, setShowAll] = useState(false);
   const [mySkillsRequired, setMySkillsRequired] = useState([]);
+  const [matchScores, setMatchScores] = useState({});
+  const [distanceMap, setDistanceMap] = useState({});
   const [guestMsg, setGuestMsg] = useState(null);
   const loggedInUser = JSON.parse(localStorage.getItem("user"));
   const isAdmin = loggedInUser?.role === "admin";
@@ -105,8 +107,37 @@ const AllUsers = () => {
             getAllUsersApi(),
             getProfileApi()
           ]);
-          setUsers(usersResult.data);
+          const usersData = usersResult.data;
+          setUsers(usersData);
           setMySkillsRequired(profileResult.data.skillsRequired || []);
+
+          // Fetch AI match scores for all other users
+          const scores = {};
+          await Promise.all(
+            usersData
+              .filter((u) => u._id !== loggedInUser._id)
+              .map(async (u) => {
+                try {
+                  const res = await getMatchScoreApi(u._id);
+                  scores[u._id] = res.data.score;
+                } catch {
+                  scores[u._id] = 0;
+                }
+              })
+          );
+          setMatchScores(scores);
+
+          // Fetch geo-sorted users and build distanceKm map
+          try {
+            const geoRes = await getNearbyUsersApi();
+            const dmap = {};
+            (geoRes.data || []).forEach((u) => {
+              if (u.distanceKm != null) dmap[u._id] = u.distanceKm;
+            });
+            setDistanceMap(dmap);
+          } catch {
+            // geo is optional — silently ignore
+          }
         } else {
           const usersResult = await getAllUsersApi();
           setUsers(usersResult.data);
@@ -126,19 +157,6 @@ const AllUsers = () => {
       setSkillFilter("");
     }
     setShowAll(false);
-  };
-
-  const computeMatch = (targetUser) => {
-    const myRequired = mySkillsRequired;
-    const theirOffered = targetUser.skillsOffered || [];
-    if (myRequired.length === 0) return 0;
-    const matches = myRequired.filter(s =>
-      theirOffered.some(o =>
-        o.toLowerCase().includes(s.toLowerCase()) ||
-        s.toLowerCase().includes(o.toLowerCase())
-      )
-    ).length;
-    return Math.round((matches / myRequired.length) * 100);
   };
 
   const activeCategoryObj = CATEGORIES.find(c => c.name === activeCategory) || null;
@@ -167,7 +185,14 @@ const AllUsers = () => {
 
       return matchesName && matchesSkill && matchesCity && matchesCategory;
     })
-    .sort((a, b) => (b.avgRating || 0) - (a.avgRating || 0));
+    .sort((a, b) => {
+      const dA = distanceMap[a._id];
+      const dB = distanceMap[b._id];
+      if (dA != null && dB != null) return dA - dB;
+      if (dA != null) return -1;
+      if (dB != null) return 1;
+      return (b.avgRating || 0) - (a.avgRating || 0);
+    });
 
   // Top 8 by default, all when showAll
   const displayedUsers = showAll ? filteredUsers : filteredUsers.slice(0, 8);
@@ -311,7 +336,7 @@ const AllUsers = () => {
             gap: "24px"
           }}>
             {displayedUsers.map((user) => {
-              const matchPct = computeMatch(user);
+              const matchPct = loggedInUser ? (matchScores[user._id] ?? 0) : 0;
               return (
                 <div
                   key={user._id}
@@ -396,6 +421,12 @@ const AllUsers = () => {
                     {user.city && (
                       <p style={{ margin: "0 0 10px", fontSize: "12px", color: "#777777" }}>
                         📍 {user.city}
+                      </p>
+                    )}
+
+                    {distanceMap[user._id] != null && (
+                      <p style={{ margin: "0 0 10px", fontSize: "12px", color: "#1a6fb5" }}>
+                        📍 {distanceMap[user._id]} km away
                       </p>
                     )}
 

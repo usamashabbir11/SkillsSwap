@@ -198,3 +198,17 @@ export const getNotificationsApi = async () => {
   );
   return res.data;
 };
+
+/* PHASE 14A - AI MATCHING */
+
+export const getMatchScoreApi = async (userId) => {
+  const res = await axios.get(`${API_BASE_URL}/match/score/${userId}`, authHeader());
+  return res.data;
+};
+
+/* PHASE 14B - GEO LOCATION */
+
+export const getNearbyUsersApi = async () => {
+  const res = await axios.get(`${API_BASE_URL}/geo/nearby`, authHeader());
+  return res.data;
+};
