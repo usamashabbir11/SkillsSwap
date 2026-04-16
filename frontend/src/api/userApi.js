@@ -219,3 +219,28 @@ export const getSuggestionsApi = async () => {
   const res = await axios.get(`${API_BASE_URL}/suggestions`, authHeader());
   return res.data;
 };
+
+/* ================= COMPLAINTS ================= */
+
+export const submitComplaintApi = async (reportedUserId, reason, description) => {
+  const res = await axios.post(
+    `${API_BASE_URL}/complaints`,
+    { reportedUserId, reason, description },
+    authHeader()
+  );
+  return res.data;
+};
+
+export const getComplaintsApi = async () => {
+  const res = await axios.get(`${API_BASE_URL}/complaints`, authHeader());
+  return res.data;
+};
+
+export const updateComplaintStatusApi = async (complaintId, status) => {
+  const res = await axios.put(
+    `${API_BASE_URL}/complaints/${complaintId}`,
+    { status },
+    authHeader()
+  );
+  return res.data;
+};

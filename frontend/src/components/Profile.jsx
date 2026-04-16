@@ -3,6 +3,12 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "./Navbar";
 import { getProfileApi, deleteOwnProfileApi, getReviewsForUserApi } from "../api/userApi";
 
+const getImageUrl = (path) => {
+  if (!path) return "https://via.placeholder.com/120";
+  if (path.startsWith("http")) return path;
+  return `http://localhost:5000${path}`;
+};
+
 const sectionStyle = {
   backgroundColor: "#ffffff",
   border: "1px solid #e9e9e9",
@@ -59,7 +65,7 @@ const Profile = () => {
           height: "220px",
           backgroundColor: "#e9e9e9",
           backgroundImage: user.coverImage
-            ? `url(http://localhost:5000${user.coverImage})`
+            ? `url(${getImageUrl(user.coverImage)})`
             : "linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)",
           backgroundSize: "cover",
           backgroundPosition: "center"
@@ -79,7 +85,7 @@ const Profile = () => {
           <img
             src={
               user.profileImage
-                ? `http://localhost:5000${user.profileImage}`
+                ? getImageUrl(user.profileImage)
                 : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=1dbf73&color=fff&size=112`
             }
             alt={user.name}
@@ -258,7 +264,7 @@ const Profile = () => {
                     <video
                       controls
                       style={{ width: "100%", borderRadius: "4px", maxHeight: "300px" }}
-                      src={`http://localhost:5000${course.video}`}
+                      src={getImageUrl(course.video)}
                     />
                   </div>
                 </div>

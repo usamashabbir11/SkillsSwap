@@ -3,6 +3,12 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "./Navbar";
 import { getAllUsersApi, adminDeleteUserApi, getProfileApi, getMatchScoreApi, getNearbyUsersApi } from "../api/userApi";
 
+const getImageUrl = (path) => {
+  if (!path) return "https://via.placeholder.com/120";
+  if (path.startsWith("http")) return path;
+  return `http://localhost:5000${path}`;
+};
+
 const coverGradients = [
   "linear-gradient(135deg, #1dbf73 0%, #16a085 100%)",
   "linear-gradient(135deg, #3498db 0%, #1a6fb5 100%)",
@@ -360,7 +366,7 @@ const AllUsers = () => {
                   <div style={{
                     height: "80px",
                     backgroundImage: user.coverImage
-                      ? `url(http://localhost:5000${user.coverImage})`
+                      ? `url(${getImageUrl(user.coverImage)})`
                       : getGradient(user.name),
                     backgroundSize: "cover",
                     backgroundPosition: "center"
@@ -371,7 +377,7 @@ const AllUsers = () => {
                     <img
                       src={
                         user.profileImage
-                          ? `http://localhost:5000${user.profileImage}`
+                          ? getImageUrl(user.profileImage)
                           : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=1dbf73&color=fff&size=56`
                       }
                       alt={user.name}

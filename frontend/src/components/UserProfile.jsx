@@ -11,8 +11,15 @@ import {
   submitCourseReviewApi,
   getReviewsForUserApi,
   createCheckoutSessionApi,
-  getNearbyUsersApi
+  getNearbyUsersApi,
+  submitComplaintApi
 } from "../api/userApi";
+
+const getImageUrl = (path) => {
+  if (!path) return "https://via.placeholder.com/120";
+  if (path.startsWith("http")) return path;
+  return `http://localhost:5000${path}`;
+};
 
 const sectionStyle = {
   backgroundColor: "#ffffff",
@@ -47,6 +54,12 @@ const UserProfile = () => {
   const [courseRatings, setCourseRatings] = useState({});
   const [courseComments, setCourseComments] = useState({});
   const [courseReviewSubmitted, setCourseReviewSubmitted] = useState({});
+
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("Fake Profile");
+  const [reportDescription, setReportDescription] = useState("");
+  const [reportSuccess, setReportSuccess] = useState(false);
+  const [reportSubmitting, setReportSubmitting] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -142,6 +155,20 @@ const UserProfile = () => {
     }
   };
 
+  const handleSubmitReport = async () => {
+    setReportSubmitting(true);
+    try {
+      await submitComplaintApi(id, reportReason, reportDescription);
+      setReportSuccess(true);
+      setReportDescription("");
+      setReportReason("Fake Profile");
+    } catch (err) {
+      alert(err?.response?.data?.message || "Failed to submit report.");
+    } finally {
+      setReportSubmitting(false);
+    }
+  };
+
   const handleSubmitCourseReview = async (index) => {
     const rating = courseRatings[index] ?? 5;
     const comment = courseComments[index] ?? "";
@@ -164,12 +191,111 @@ const UserProfile = () => {
     <div style={{ backgroundColor: "#ffffff", minHeight: "100vh" }}>
       <Navbar />
 
+      {/* REPORT USER MODAL */}
+      {reportModalOpen && (
+        <div style={{
+          position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.45)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: "#ffffff", borderRadius: "8px", padding: "28px 28px 24px",
+            width: "420px", maxWidth: "90vw", boxShadow: "0 8px 32px rgba(0,0,0,0.18)"
+          }}>
+            <h3 style={{ margin: "0 0 16px", fontSize: "16px", fontWeight: 700, color: "#222222" }}>
+              Report User
+            </h3>
+
+            {reportSuccess ? (
+              <div>
+                <p style={{ margin: "0 0 20px", fontSize: "14px", color: "#1dbf73", fontWeight: 600 }}>
+                  Report submitted successfully.
+                </p>
+                <button
+                  onClick={() => setReportModalOpen(false)}
+                  style={{
+                    backgroundColor: "#222222", color: "#ffffff", border: "none",
+                    borderRadius: "4px", padding: "9px 20px", fontSize: "13px",
+                    fontWeight: 500, cursor: "pointer"
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <>
+                <div style={{ marginBottom: "14px" }}>
+                  <label style={{ display: "block", fontSize: "13px", color: "#555555", marginBottom: "6px" }}>
+                    Reason
+                  </label>
+                  <select
+                    value={reportReason}
+                    onChange={(e) => setReportReason(e.target.value)}
+                    style={{
+                      width: "100%", border: "1px solid #e9e9e9", borderRadius: "4px",
+                      padding: "9px 12px", fontSize: "13px", color: "#222222", outline: "none"
+                    }}
+                  >
+                    <option>Fake Profile</option>
+                    <option>Inappropriate Content</option>
+                    <option>Spam</option>
+                    <option>Harassment</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+
+                <div style={{ marginBottom: "18px" }}>
+                  <label style={{ display: "block", fontSize: "13px", color: "#555555", marginBottom: "6px" }}>
+                    Description (optional)
+                  </label>
+                  <textarea
+                    value={reportDescription}
+                    onChange={(e) => setReportDescription(e.target.value)}
+                    placeholder="Describe the issue..."
+                    rows={4}
+                    style={{
+                      width: "100%", border: "1px solid #e9e9e9", borderRadius: "4px",
+                      padding: "10px 12px", fontSize: "13px", color: "#222222",
+                      outline: "none", resize: "vertical", boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+                  <button
+                    onClick={() => setReportModalOpen(false)}
+                    style={{
+                      backgroundColor: "transparent", color: "#777777",
+                      border: "1px solid #dddddd", borderRadius: "4px",
+                      padding: "8px 18px", fontSize: "13px", cursor: "pointer"
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSubmitReport}
+                    disabled={reportSubmitting}
+                    style={{
+                      backgroundColor: reportSubmitting ? "#cccccc" : "#e53935",
+                      color: "#ffffff", border: "none", borderRadius: "4px",
+                      padding: "8px 18px", fontSize: "13px", fontWeight: 600,
+                      cursor: reportSubmitting ? "not-allowed" : "pointer"
+                    }}
+                  >
+                    {reportSubmitting ? "Submitting..." : "Submit Report"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* COVER */}
       <div style={{
         height: "220px",
         backgroundColor: "#e9e9e9",
         backgroundImage: user.coverImage
-          ? `url(http://localhost:5000${user.coverImage})`
+          ? `url(${getImageUrl(user.coverImage)})`
           : "linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)",
         backgroundSize: "cover",
         backgroundPosition: "center"
@@ -188,7 +314,7 @@ const UserProfile = () => {
           <img
             src={
               user.profileImage
-                ? `http://localhost:5000${user.profileImage}`
+                ? getImageUrl(user.profileImage)
                 : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=1dbf73&color=fff&size=112`
             }
             alt={user.name}
@@ -220,6 +346,24 @@ const UserProfile = () => {
                 📍 {user.city}{distanceKm != null ? ` · ${distanceKm} km away` : ""}
               </p>
             )}
+          </div>
+
+          {/* REPORT USER BUTTON */}
+          <div style={{ alignSelf: "flex-start", marginTop: "auto" }}>
+            <button
+              onClick={() => { setReportModalOpen(true); setReportSuccess(false); }}
+              style={{
+                backgroundColor: "transparent",
+                color: "#aaaaaa",
+                border: "1px solid #dddddd",
+                borderRadius: "4px",
+                padding: "6px 14px",
+                fontSize: "12px",
+                cursor: "pointer"
+              }}
+            >
+              Report User
+            </button>
           </div>
 
           {/* SWAP ACTION BUTTON */}
@@ -433,7 +577,7 @@ const UserProfile = () => {
                         <video
                           controls
                           style={{ width: "100%", borderRadius: "6px", maxHeight: "300px" }}
-                          src={`http://localhost:5000${course.video}`}
+                          src={getImageUrl(course.video)}
                         />
                       ) : (
                         <div style={{

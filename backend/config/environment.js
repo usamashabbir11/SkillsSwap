@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 
-const loadEnvironment = () => {
-  dotenv.config();
-};
+dotenv.config();
+
+const loadEnvironment = () => {};
 
 export default loadEnvironment;

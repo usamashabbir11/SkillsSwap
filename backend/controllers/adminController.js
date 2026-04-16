@@ -2,6 +2,7 @@ import User from "../models/userModel.js";
 import SwapRequest from "../models/swapRequestModel.js";
 import SwapDeal from "../models/swapDealModel.js";
 import Review from "../models/reviewModel.js";
+import Complaint from "../models/complaintModel.js";
 
 //  GET ADMIN STATS 
 export const getAdminStats = async (req, res) => {
@@ -22,6 +23,8 @@ export const getAdminStats = async (req, res) => {
 
   const totalReviews = await Review.countDocuments();
 
+  const totalComplaints = await Complaint.countDocuments();
+
   res.json({
     success: true,
     data: {
@@ -29,7 +32,8 @@ export const getAdminStats = async (req, res) => {
       totalSwapRequests,
       totalCompletedSwaps,
       totalCourses,
-      totalReviews
+      totalReviews,
+      totalComplaints
     }
   });
 };

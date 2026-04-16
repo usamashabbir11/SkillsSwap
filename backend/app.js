@@ -11,6 +11,7 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import matchRoutes from "./routes/matchRoutes.js";
 import geoRoutes from "./routes/geoRoutes.js";
 import suggestionRoutes from "./routes/suggestionRoutes.js";
+import complaintRoutes from "./routes/complaintRoutes.js";
 
 const app = express();
 
@@ -31,5 +32,6 @@ app.use("/payments", paymentRoutes);
 app.use("/match", matchRoutes);
 app.use("/geo", geoRoutes);
 app.use("/suggestions", suggestionRoutes);
+app.use("/complaints", complaintRoutes);
 
 export default app;

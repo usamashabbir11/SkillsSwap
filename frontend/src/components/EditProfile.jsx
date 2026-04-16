@@ -1,63 +1,57 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import Navbar from "./Navbar";
 import axios from "axios";
-import { getProfileApi, updateProfileApi } from "../api/userApi";
+import { getProfileApi, updateProfileApi, deleteOwnProfileApi } from "../api/userApi";
 
-const inputStyle = {
-  width: "100%",
-  border: "1px solid #e9e9e9",
-  borderRadius: "4px",
-  padding: "10px 14px",
-  fontSize: "14px",
-  outline: "none",
-  color: "#222222",
-  backgroundColor: "#ffffff",
-  boxSizing: "border-box"
+const getImageUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  return `http://localhost:5000${path}`;
 };
 
-const labelStyle = {
-  display: "block",
-  fontSize: "13px",
-  fontWeight: 600,
-  color: "#222222",
-  marginBottom: "6px"
-};
+const NAV_ITEMS = [
+  { label: "Dashboard", path: "/users", icon: "🏠" },
+  { label: "Edit Profile", path: "/profile/edit", icon: "✏️" },
+  { label: "Explore", path: "/users", icon: "🔍" },
+  { label: "AI Matches", path: "/suggestions", icon: "🤖" },
+  { label: "Swap Requests", path: "/requests", icon: "🔄" },
+  { label: "Notifications", path: "/notifications", icon: "🔔" },
+];
 
-const sectionStyle = {
-  backgroundColor: "#ffffff",
-  border: "1px solid #e9e9e9",
-  borderRadius: "8px",
-  padding: "24px",
-  marginBottom: "20px"
-};
+const TABS = ["Personal Info", "Skills", "Add Course", "Location"];
 
 const EditProfile = () => {
   const navigate = useNavigate();
 
+  /* ── existing state ── */
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    bio: "",
-    phone: "",
-    city: "",
-    lat: "",
-    lng: ""
+    name: "", email: "", bio: "", phone: "", city: "", lat: "", lng: ""
   });
-
   const [skillsOffered, setSkillsOffered] = useState("");
   const [skillsRequired, setSkillsRequired] = useState("");
   const [skillsSaved, setSkillsSaved] = useState(false);
-
   const [profileUploaded, setProfileUploaded] = useState(false);
   const [coverUploaded, setCoverUploaded] = useState(false);
+  const [profileUploading, setProfileUploading] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
   const [locationDetecting, setLocationDetecting] = useState(false);
   const [locationMsg, setLocationMsg] = useState("");
-
   const [courseTitle, setCourseTitle] = useState("");
   const [coursePrice, setCoursePrice] = useState("");
   const [courseVideo, setCourseVideo] = useState(null);
   const [courseVideoSelected, setCourseVideoSelected] = useState(false);
+  const [courseAdding, setCourseAdding] = useState(false);
+  const [courseAdded, setCourseAdded] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  /* ── new state for UI ── */
+  const [activeTab, setActiveTab] = useState("Personal Info");
+  const [profileImageUrl, setProfileImageUrl] = useState(null);
+  const [coverImageUrl, setCoverImageUrl] = useState(null);
+
+  /* ── refs for hidden file inputs ── */
+  const profileInputRef = useRef(null);
+  const coverInputRef = useRef(null);
 
   useEffect(() => {
     getProfileApi().then(res => {
@@ -72,24 +66,47 @@ const EditProfile = () => {
       });
       setSkillsOffered(res.data.skillsOffered?.join(", ") || "");
       setSkillsRequired(res.data.skillsRequired?.join(", ") || "");
-      setProfileUploaded(false);
-      setCoverUploaded(false);
+      setProfileImageUrl(getImageUrl(res.data.profileImage));
+      setCoverImageUrl(getImageUrl(res.data.coverImage));
     });
   }, []);
 
-  const handleChange = e =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  /* ── re-fetch image URLs after successful upload ── */
+  useEffect(() => {
+    if (profileUploaded) {
+      getProfileApi().then(res => setProfileImageUrl(getImageUrl(res.data.profileImage)));
+    }
+  }, [profileUploaded]);
+
+  useEffect(() => {
+    if (coverUploaded) {
+      getProfileApi().then(res => setCoverImageUrl(getImageUrl(res.data.coverImage)));
+    }
+  }, [coverUploaded]);
+
+  /* ── existing functions (unchanged) ── */
+  const handleChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const uploadImage = async (e, type) => {
-    const data = new FormData();
-    data.append("image", e.target.files[0]);
-    await axios.put(
-      `http://localhost:5000/users/profile/${type}`,
-      data,
-      { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-    );
-    if (type === "image") setProfileUploaded(true);
-    if (type === "cover") setCoverUploaded(true);
+    try {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (type === "image") setProfileUploading(true);
+      if (type === "cover") setCoverUploading(true);
+      const data = new FormData();
+      data.append("image", file);
+      await axios.put(
+        `http://localhost:5000/users/profile/${type}`,
+        data,
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+      );
+      if (type === "image") { setProfileUploaded(true); setProfileUploading(false); }
+      if (type === "cover") { setCoverUploaded(true); setCoverUploading(false); }
+    } catch (err) {
+      if (type === "image") setProfileUploading(false);
+      if (type === "cover") setCoverUploading(false);
+      alert("Upload failed: " + (err?.response?.data?.message || err.message));
+    }
   };
 
   const saveSkills = async () => {
@@ -105,19 +122,32 @@ const EditProfile = () => {
   };
 
   const addCourse = async () => {
-    const data = new FormData();
-    data.append("title", courseTitle);
-    data.append("price", coursePrice);
-    data.append("video", courseVideo);
-    await axios.post(
-      "http://localhost:5000/users/courses",
-      data,
-      { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-    );
-    setCourseTitle("");
-    setCoursePrice("");
-    setCourseVideo(null);
-    setCourseVideoSelected(false);
+    if (!courseTitle || !coursePrice || !courseVideo) {
+      alert("Please fill in all course fields and select a video.");
+      return;
+    }
+    try {
+      setCourseAdding(true);
+      const data = new FormData();
+      data.append("title", courseTitle);
+      data.append("price", coursePrice);
+      data.append("video", courseVideo);
+      await axios.post(
+        "http://localhost:5000/users/courses",
+        data,
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+      );
+      setCourseTitle("");
+      setCoursePrice("");
+      setCourseVideo(null);
+      setCourseVideoSelected(false);
+      setCourseAdded(true);
+      setCourseAdding(false);
+      setTimeout(() => setCourseAdded(false), 3000);
+    } catch (err) {
+      setCourseAdding(false);
+      alert("Failed to add course: " + (err?.response?.data?.message || err.message));
+    }
   };
 
   const detectLocation = () => {
@@ -132,22 +162,13 @@ const EditProfile = () => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
-          );
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
           const data = await res.json();
           const address = data.address;
           const area = address.suburb || address.neighbourhood || address.village || address.town || "";
           const existingCity = formData.city.trim();
-          const fullLocation = area && existingCity
-            ? `${area}, ${existingCity}`
-            : area || existingCity;
-          setFormData(prev => ({
-            ...prev,
-            lat: lat.toString(),
-            lng: lng.toString(),
-            city: fullLocation
-          }));
+          const fullLocation = area && existingCity ? `${area}, ${existingCity}` : area || existingCity;
+          setFormData(prev => ({ ...prev, lat: lat.toString(), lng: lng.toString(), city: fullLocation }));
           setLocationMsg(`✅ Location detected: ${fullLocation}`);
         } catch {
           setLocationMsg("Could not detect location. Please enter city manually.");
@@ -155,281 +176,487 @@ const EditProfile = () => {
           setLocationDetecting(false);
         }
       },
-      () => {
-        setLocationMsg("Could not detect location. Please enter city manually.");
-        setLocationDetecting(false);
-      }
+      () => { setLocationMsg("Could not detect location. Please enter city manually."); setLocationDetecting(false); }
     );
   };
 
   const submit = async e => {
     e.preventDefault();
+    setSaving(true);
     await updateProfileApi(formData);
+    setSaving(false);
     navigate("/profile");
   };
 
+  const handleDeleteAccount = async () => {
+    if (!window.confirm("Are you sure you want to delete your account? This cannot be undone.")) return;
+    await deleteOwnProfileApi();
+    localStorage.clear();
+    navigate("/");
+  };
+
+  /* ── derived ── */
+  const firstName = formData.name?.split(" ")[0] || "User";
+  const initials = formData.name
+    ? formData.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+    : "U";
+
+  /* ── shared input style ── */
+  const inp = {
+    width: "100%", border: "1.5px solid #e8eaed", borderRadius: "6px",
+    padding: "10px 13px", fontSize: "14px", outline: "none", color: "#222",
+    backgroundColor: "#fff", boxSizing: "border-box", fontFamily: "inherit",
+    transition: "border-color 0.15s"
+  };
+  const lbl = { display: "block", fontSize: "12px", fontWeight: 600, color: "#666", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" };
+  const fieldWrap = { display: "flex", flexDirection: "column" };
+
   return (
-    <div style={{ backgroundColor: "#ffffff", minHeight: "100vh" }}>
-      <Navbar />
+    <div style={{ display: "flex", height: "100vh", backgroundColor: "#f0f2f5", fontFamily: "inherit" }}>
 
-      <div style={{ maxWidth: "680px", margin: "40px auto", padding: "0 24px 60px" }}>
-        <h2 style={{ fontSize: "24px", fontWeight: 800, color: "#222222", margin: "0 0 28px" }}>
-          Edit Profile
-        </h2>
-
-        {/* PHOTO UPLOADS */}
-        <div style={sectionStyle}>
-          <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#222222", margin: "0 0 16px" }}>
-            Photos
-          </h3>
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <label style={{ cursor: "pointer" }}>
-              <div style={{
-                backgroundColor: profileUploaded ? "#e8f7f0" : "#1dbf73",
-                color: profileUploaded ? "#1dbf73" : "#ffffff",
-                border: profileUploaded ? "1.5px solid #1dbf73" : "none",
-                borderRadius: "4px",
-                padding: "10px 20px",
-                fontSize: "13px",
-                fontWeight: 500,
-                cursor: "pointer",
-                transition: "all 0.15s"
-              }}>
-                {profileUploaded ? "Profile Picture Uploaded ✅" : "Upload Profile Picture"}
-              </div>
-              <input type="file" style={{ display: "none" }} onChange={e => uploadImage(e, "image")} />
-            </label>
-
-            <label style={{ cursor: "pointer" }}>
-              <div style={{
-                backgroundColor: coverUploaded ? "#e8f7f0" : "#1dbf73",
-                color: coverUploaded ? "#1dbf73" : "#ffffff",
-                border: coverUploaded ? "1.5px solid #1dbf73" : "none",
-                borderRadius: "4px",
-                padding: "10px 20px",
-                fontSize: "13px",
-                fontWeight: 500,
-                cursor: "pointer",
-                transition: "all 0.15s"
-              }}>
-                {coverUploaded ? "Cover Photo Uploaded ✅" : "Upload Cover Photo"}
-              </div>
-              <input type="file" style={{ display: "none" }} onChange={e => uploadImage(e, "cover")} />
-            </label>
-          </div>
+      {/* ═══ LEFT SIDEBAR ═══ */}
+      <div style={{
+        width: "240px", flexShrink: 0, backgroundColor: "#fff",
+        borderRight: "1px solid #e8eaed", display: "flex", flexDirection: "column"
+      }}>
+        {/* Logo */}
+        <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid #e8eaed" }}>
+          <span style={{ fontWeight: 800, fontSize: "20px", letterSpacing: "-0.5px", cursor: "pointer" }} onClick={() => navigate("/users")}>
+            <span style={{ color: "#222" }}>Skills</span>
+            <span style={{ color: "#1dbf73" }}>Swap</span>
+          </span>
         </div>
 
-        {/* SKILLS */}
-        <div style={sectionStyle}>
-          <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#222222", margin: "0 0 16px" }}>
-            Skills
-          </h3>
+        {/* Nav items */}
+        <nav style={{ flex: 1, padding: "12px 0", overflowY: "auto" }}>
+          {NAV_ITEMS.map(item => {
+            const isActive = item.label === "Edit Profile";
+            return (
+              <button
+                key={item.label}
+                onClick={() => navigate(item.path)}
+                style={{
+                  display: "flex", alignItems: "center", gap: "10px",
+                  width: "100%", padding: "10px 20px", border: "none", cursor: "pointer",
+                  fontSize: "14px", fontWeight: isActive ? 600 : 400, textAlign: "left",
+                  backgroundColor: isActive ? "#f0fff8" : "transparent",
+                  color: isActive ? "#1dbf73" : "#444",
+                  borderLeft: isActive ? "3px solid #1dbf73" : "3px solid transparent",
+                  transition: "all 0.15s"
+                }}
+              >
+                <span style={{ fontSize: "15px" }}>{item.icon}</span>
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
 
-          <div style={{ marginBottom: "14px" }}>
-            <label style={labelStyle}>Skills I Offer</label>
-            <input
-              value={skillsOffered}
-              onChange={e => { setSkillsOffered(e.target.value); setSkillsSaved(false); }}
-              placeholder="e.g. React, Python, Photoshop (comma-separated)"
-              style={inputStyle}
-            />
-          </div>
-
-          <div style={{ marginBottom: "16px" }}>
-            <label style={labelStyle}>Skills I Require</label>
-            <input
-              value={skillsRequired}
-              onChange={e => { setSkillsRequired(e.target.value); setSkillsSaved(false); }}
-              placeholder="e.g. UI Design, Node.js (comma-separated)"
-              style={inputStyle}
-            />
-          </div>
-
+        {/* Delete Account */}
+        <div style={{ padding: "16px 20px", borderTop: "1px solid #e8eaed" }}>
           <button
-            type="button"
-            onClick={saveSkills}
+            onClick={handleDeleteAccount}
             style={{
-              width: "100%",
-              backgroundColor: skillsSaved ? "#e8f7f0" : "#1dbf73",
-              color: skillsSaved ? "#1dbf73" : "#ffffff",
-              border: skillsSaved ? "1.5px solid #1dbf73" : "none",
-              borderRadius: "4px",
-              padding: "11px",
-              fontSize: "14px",
-              fontWeight: 500,
-              cursor: "pointer",
-              transition: "all 0.15s"
+              display: "flex", alignItems: "center", gap: "8px",
+              width: "100%", padding: "10px 0", border: "none", cursor: "pointer",
+              backgroundColor: "transparent", color: "#e74c3c",
+              fontSize: "14px", fontWeight: 500, textAlign: "left"
             }}
           >
-            {skillsSaved ? "Skills Saved ✅" : "Save Skills"}
+            🗑️ Delete Account
           </button>
         </div>
+      </div>
 
-        {/* PROFILE INFO */}
-        <div style={sectionStyle}>
-          <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#222222", margin: "0 0 16px" }}>
-            Profile Information
-          </h3>
+      {/* ═══ MAIN AREA ═══ */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
-          <form onSubmit={submit}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              <div>
-                <label style={labelStyle}>Full Name</label>
-                <input name="name" value={formData.name} onChange={handleChange} placeholder="Enter your name" style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>Email</label>
-                <input name="email" value={formData.email} onChange={handleChange} placeholder="Enter your email" style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>Bio</label>
-                <textarea
-                  name="bio"
-                  value={formData.bio}
-                  onChange={handleChange}
-                  placeholder="Tell others about yourself..."
-                  rows={4}
-                  style={{ ...inputStyle, resize: "vertical" }}
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Phone</label>
-                <input name="phone" value={formData.phone} onChange={handleChange} placeholder="Enter phone number" style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>City</label>
-                <input name="city" value={formData.city} onChange={handleChange} placeholder="Enter city" style={inputStyle} />
-              </div>
-
-              <div>
-                <button
-                  type="button"
-                  onClick={detectLocation}
-                  disabled={locationDetecting}
-                  style={{
-                    border: "1px solid #1dbf73",
-                    color: "#1dbf73",
-                    backgroundColor: "#ffffff",
-                    borderRadius: "4px",
-                    padding: "8px 16px",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    cursor: locationDetecting ? "not-allowed" : "pointer",
-                    transition: "all 0.15s"
-                  }}
-                >
-                  {locationDetecting ? "Detecting..." : "📍 Detect My Location"}
-                </button>
-                {locationMsg && (
-                  <p style={{
-                    margin: "8px 0 0",
-                    fontSize: "13px",
-                    color: locationMsg.startsWith("✅") ? "#1dbf73" : "#e74c3c"
-                  }}>
-                    {locationMsg}
-                  </p>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                style={{
-                  backgroundColor: "#1dbf73",
-                  color: "#ffffff",
-                  border: "none",
-                  borderRadius: "4px",
-                  padding: "11px",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  cursor: "pointer",
-                  marginTop: "4px",
-                  transition: "background 0.15s"
-                }}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = "#19a463"}
-                onMouseLeave={e => e.currentTarget.style.backgroundColor = "#1dbf73"}
-              >
-                Save Profile Info
-              </button>
+        {/* TOP BAR */}
+        <div style={{
+          height: "56px", backgroundColor: "#fff", borderBottom: "1px solid #e8eaed",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "0 28px", flexShrink: 0
+        }}>
+          <span style={{ fontSize: "16px", fontWeight: 700, color: "#222" }}>Edit Profile</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontSize: "14px", color: "#555" }}>Hi, {firstName}</span>
+            <div style={{
+              width: "34px", height: "34px", borderRadius: "50%",
+              backgroundColor: "#1dbf73", color: "#fff",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "13px", fontWeight: 700, flexShrink: 0
+            }}>
+              {initials}
             </div>
-          </form>
+          </div>
         </div>
 
-        {/* ADD COURSE */}
-        <div style={sectionStyle}>
-          <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#222222", margin: "0 0 16px" }}>
-            Add Course
-          </h3>
+        {/* SCROLLABLE CONTENT */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "24px 32px" }}>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <div>
-              <label style={labelStyle}>Course Title</label>
+          {/* ── PROFILE HEADER CARD ── */}
+          <div style={{
+            backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e8eaed",
+            overflow: "hidden", marginBottom: "20px"
+          }}>
+            {/* Cover photo area */}
+            <div style={{
+              height: "120px", position: "relative",
+              backgroundColor: "#0f3460",
+              backgroundImage: coverImageUrl ? `url(${coverImageUrl})` : "linear-gradient(135deg, #1a1a2e, #0f3460)",
+              backgroundSize: "cover", backgroundPosition: "center"
+            }}>
+              <button
+                onClick={() => coverInputRef.current?.click()}
+                disabled={coverUploading}
+                style={{
+                  position: "absolute", top: "10px", right: "12px",
+                  backgroundColor: "rgba(255,255,255,0.18)", backdropFilter: "blur(4px)",
+                  color: "#fff", border: "1px solid rgba(255,255,255,0.4)",
+                  borderRadius: "6px", padding: "5px 12px", fontSize: "12px",
+                  fontWeight: 500, cursor: coverUploading ? "not-allowed" : "pointer"
+                }}
+              >
+                {coverUploading ? "Uploading…" : coverUploaded ? "Cover Updated ✅" : "Change Cover"}
+              </button>
               <input
-                placeholder="e.g. Introduction to React"
-                value={courseTitle}
-                onChange={e => setCourseTitle(e.target.value)}
-                style={inputStyle}
+                ref={coverInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={e => uploadImage(e, "cover")}
               />
             </div>
 
-            <div>
-              <label style={labelStyle}>Price (USD)</label>
-              <input
-                placeholder="e.g. 49"
-                type="number"
-                value={coursePrice}
-                onChange={e => setCoursePrice(e.target.value)}
-                style={inputStyle}
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Course Video</label>
-              <label style={{ cursor: "pointer", display: "block" }}>
-                <div style={{
-                  backgroundColor: courseVideoSelected ? "#e8f7f0" : "#222222",
-                  color: courseVideoSelected ? "#1dbf73" : "#ffffff",
-                  border: courseVideoSelected ? "1.5px solid #1dbf73" : "none",
-                  borderRadius: "4px",
-                  padding: "10px 20px",
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  cursor: "pointer",
-                  textAlign: "center",
-                  transition: "all 0.15s"
-                }}>
-                  {courseVideoSelected ? "Video Selected ✅" : "Upload Course Video"}
+            {/* Avatar + info */}
+            <div style={{ padding: "0 24px 20px" }}>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: "16px", flexWrap: "wrap" }}>
+                {/* Avatar */}
+                <div style={{ position: "relative", marginTop: "-28px" }}>
+                  {profileImageUrl ? (
+                    <img
+                      src={profileImageUrl}
+                      alt={formData.name}
+                      style={{
+                        width: "72px", height: "72px", borderRadius: "50%",
+                        objectFit: "cover", border: "4px solid #fff",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.12)", display: "block"
+                      }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: "72px", height: "72px", borderRadius: "50%",
+                      backgroundColor: "#1dbf73", border: "4px solid #fff",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: "22px", fontWeight: 700, color: "#fff",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.12)"
+                    }}>
+                      {initials}
+                    </div>
+                  )}
+                  {/* Pencil edit button */}
+                  <button
+                    onClick={() => profileInputRef.current?.click()}
+                    disabled={profileUploading}
+                    style={{
+                      position: "absolute", bottom: "2px", right: "2px",
+                      width: "22px", height: "22px", borderRadius: "50%",
+                      backgroundColor: "#1dbf73", border: "2px solid #fff",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      cursor: profileUploading ? "not-allowed" : "pointer",
+                      fontSize: "11px", padding: 0, lineHeight: 1
+                    }}
+                    title="Change profile picture"
+                  >
+                    ✏️
+                  </button>
+                  <input
+                    ref={profileInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={e => uploadImage(e, "image")}
+                  />
                 </div>
-                <input
-                  type="file"
-                  style={{ display: "none" }}
-                  onChange={e => {
-                    setCourseVideo(e.target.files[0]);
-                    setCourseVideoSelected(true);
-                  }}
-                />
-              </label>
-            </div>
 
-            <button
-              type="button"
-              onClick={addCourse}
-              style={{
-                backgroundColor: "#222222",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: "4px",
-                padding: "11px",
-                fontSize: "14px",
-                fontWeight: 500,
-                cursor: "pointer",
-                transition: "background 0.15s"
-              }}
-              onMouseEnter={e => e.currentTarget.style.backgroundColor = "#444444"}
-              onMouseLeave={e => e.currentTarget.style.backgroundColor = "#222222"}
-            >
-              Add Course
-            </button>
+                {/* Name + email */}
+                <div style={{ paddingBottom: "4px", marginTop: "8px" }}>
+                  <div style={{ fontSize: "18px", fontWeight: 700, color: "#222" }}>
+                    {formData.name || "Your Name"}
+                  </div>
+                  <div style={{ fontSize: "13px", color: "#888", marginTop: "2px" }}>
+                    {formData.email || "your@email.com"}
+                  </div>
+                  {profileUploading && (
+                    <div style={{ fontSize: "12px", color: "#1dbf73", marginTop: "4px" }}>Uploading photo…</div>
+                  )}
+                  {profileUploaded && !profileUploading && (
+                    <div style={{ fontSize: "12px", color: "#1dbf73", marginTop: "4px" }}>Photo updated ✅</div>
+                  )}
+                </div>
+              </div>
+
+              {/* TABS */}
+              <div style={{
+                display: "flex", gap: "0", marginTop: "20px",
+                borderBottom: "1px solid #e8eaed"
+              }}>
+                {TABS.map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    style={{
+                      padding: "10px 20px", border: "none", background: "none",
+                      cursor: "pointer", fontSize: "14px", fontWeight: activeTab === tab ? 600 : 400,
+                      color: activeTab === tab ? "#1dbf73" : "#666",
+                      borderBottom: activeTab === tab ? "2px solid #1dbf73" : "2px solid transparent",
+                      marginBottom: "-1px", transition: "all 0.15s"
+                    }}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
+
+          {/* ── PERSONAL INFO TAB ── */}
+          {activeTab === "Personal Info" && (
+            <div style={{
+              backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e8eaed",
+              padding: "24px", marginBottom: "20px"
+            }}>
+              <form onSubmit={submit}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "14px" }}>
+                  <div style={fieldWrap}>
+                    <label style={lbl}>Full Name</label>
+                    <input name="name" value={formData.name} onChange={handleChange} placeholder="Enter your name" style={inp} />
+                  </div>
+                  <div style={fieldWrap}>
+                    <label style={lbl}>Email</label>
+                    <input name="email" value={formData.email} onChange={handleChange} placeholder="Enter your email" style={inp} />
+                  </div>
+                  <div style={fieldWrap}>
+                    <label style={lbl}>Phone</label>
+                    <input name="phone" value={formData.phone} onChange={handleChange} placeholder="Enter phone number" style={inp} />
+                  </div>
+                  <div style={fieldWrap}>
+                    <label style={lbl}>City</label>
+                    <input name="city" value={formData.city} onChange={handleChange} placeholder="Enter city" style={inp} />
+                  </div>
+                </div>
+                <div style={{ ...fieldWrap, marginBottom: "20px" }}>
+                  <label style={lbl}>Bio</label>
+                  <textarea
+                    name="bio"
+                    value={formData.bio}
+                    onChange={handleChange}
+                    placeholder="Tell others about yourself..."
+                    rows={4}
+                    style={{ ...inp, resize: "vertical" }}
+                  />
+                </div>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    style={{
+                      backgroundColor: "#1dbf73", color: "#fff", border: "none",
+                      borderRadius: "6px", padding: "10px 24px", fontSize: "14px",
+                      fontWeight: 500, cursor: saving ? "not-allowed" : "pointer",
+                      transition: "background 0.15s"
+                    }}
+                  >
+                    {saving ? "Saving…" : "Save Changes"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/profile")}
+                    style={{
+                      backgroundColor: "#fff", color: "#444",
+                      border: "1.5px solid #e8eaed", borderRadius: "6px",
+                      padding: "10px 24px", fontSize: "14px", fontWeight: 500,
+                      cursor: "pointer", transition: "all 0.15s"
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* ── SKILLS TAB ── */}
+          {activeTab === "Skills" && (
+            <div style={{
+              backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e8eaed",
+              padding: "24px", marginBottom: "20px"
+            }}>
+              <div style={{ ...fieldWrap, marginBottom: "14px" }}>
+                <label style={lbl}>Skills I Offer</label>
+                <input
+                  value={skillsOffered}
+                  onChange={e => { setSkillsOffered(e.target.value); setSkillsSaved(false); }}
+                  placeholder="e.g. React, Python, Photoshop (comma-separated)"
+                  style={{ ...inp, borderColor: "#3498db40" }}
+                />
+                <span style={{ fontSize: "12px", color: "#3498db", marginTop: "4px" }}>
+                  Skills you can teach others
+                </span>
+              </div>
+              <div style={{ ...fieldWrap, marginBottom: "20px" }}>
+                <label style={lbl}>Skills I Require</label>
+                <input
+                  value={skillsRequired}
+                  onChange={e => { setSkillsRequired(e.target.value); setSkillsSaved(false); }}
+                  placeholder="e.g. UI Design, Node.js (comma-separated)"
+                  style={{ ...inp, borderColor: "#e74c3c40" }}
+                />
+                <span style={{ fontSize: "12px", color: "#e74c3c", marginTop: "4px" }}>
+                  Skills you want to learn
+                </span>
+              </div>
+              <button
+                onClick={saveSkills}
+                style={{
+                  width: "100%", backgroundColor: skillsSaved ? "#e8f7f0" : "#1dbf73",
+                  color: skillsSaved ? "#1dbf73" : "#fff",
+                  border: skillsSaved ? "1.5px solid #1dbf73" : "none",
+                  borderRadius: "6px", padding: "11px", fontSize: "14px",
+                  fontWeight: 500, cursor: "pointer", transition: "all 0.15s"
+                }}
+              >
+                {skillsSaved ? "Skills Saved ✅" : "Save Skills"}
+              </button>
+            </div>
+          )}
+
+          {/* ── ADD COURSE TAB ── */}
+          {activeTab === "Add Course" && (
+            <div style={{
+              backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e8eaed",
+              padding: "24px", marginBottom: "20px"
+            }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "14px" }}>
+                <div style={fieldWrap}>
+                  <label style={lbl}>Course Title</label>
+                  <input
+                    placeholder="e.g. Introduction to React"
+                    value={courseTitle}
+                    onChange={e => setCourseTitle(e.target.value)}
+                    style={inp}
+                  />
+                </div>
+                <div style={fieldWrap}>
+                  <label style={lbl}>Price (USD)</label>
+                  <input
+                    placeholder="e.g. 49"
+                    type="number"
+                    value={coursePrice}
+                    onChange={e => setCoursePrice(e.target.value)}
+                    style={inp}
+                  />
+                </div>
+              </div>
+
+              {/* Video upload area */}
+              <div style={{ marginBottom: "20px" }}>
+                <label style={lbl}>Course Video</label>
+                <label style={{ cursor: "pointer", display: "block" }}>
+                  <div style={{
+                    border: `2px dashed ${courseVideoSelected ? "#1dbf73" : "#e8eaed"}`,
+                    borderRadius: "8px", padding: "32px", textAlign: "center",
+                    backgroundColor: courseVideoSelected ? "#f0fff8" : "#fafafa",
+                    transition: "all 0.2s"
+                  }}>
+                    <div style={{ fontSize: "28px", marginBottom: "8px" }}>
+                      {courseVideoSelected ? "🎬" : "📹"}
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500, color: courseVideoSelected ? "#1dbf73" : "#555" }}>
+                      {courseVideoSelected ? "Video selected ✅" : "Click to upload course video"}
+                    </div>
+                    {!courseVideoSelected && (
+                      <div style={{ fontSize: "12px", color: "#aaa", marginTop: "4px" }}>MP4, MOV, AVI supported</div>
+                    )}
+                  </div>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    style={{ display: "none" }}
+                    onChange={e => {
+                      setCourseVideo(e.target.files[0]);
+                      setCourseVideoSelected(true);
+                    }}
+                  />
+                </label>
+              </div>
+
+              {courseAdded && (
+                <div style={{
+                  backgroundColor: "#f0fff8", border: "1px solid #1dbf73",
+                  borderRadius: "6px", padding: "10px 16px", marginBottom: "14px",
+                  fontSize: "14px", color: "#1dbf73", fontWeight: 500
+                }}>
+                  Course added successfully ✅
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={addCourse}
+                disabled={courseAdding}
+                style={{
+                  width: "100%", backgroundColor: courseAdding ? "#555" : "#222",
+                  color: "#fff", border: "none", borderRadius: "6px",
+                  padding: "11px", fontSize: "14px", fontWeight: 500,
+                  cursor: courseAdding ? "not-allowed" : "pointer", transition: "background 0.15s"
+                }}
+              >
+                {courseAdding ? "Uploading…" : "Add Course"}
+              </button>
+            </div>
+          )}
+
+          {/* ── LOCATION TAB ── */}
+          {activeTab === "Location" && (
+            <div style={{
+              backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e8eaed",
+              padding: "24px", marginBottom: "20px"
+            }}>
+              <div style={{ ...fieldWrap, marginBottom: "20px" }}>
+                <label style={lbl}>City</label>
+                <input
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                  placeholder="Enter your city"
+                  style={inp}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={detectLocation}
+                disabled={locationDetecting}
+                style={{
+                  backgroundColor: "#fff", color: "#1dbf73",
+                  border: "1.5px solid #1dbf73", borderRadius: "6px",
+                  padding: "10px 20px", fontSize: "14px", fontWeight: 500,
+                  cursor: locationDetecting ? "not-allowed" : "pointer", transition: "all 0.15s"
+                }}
+              >
+                {locationDetecting ? "Detecting…" : "📍 Detect My Location"}
+              </button>
+              {locationMsg && (
+                <p style={{
+                  margin: "12px 0 0", fontSize: "13px",
+                  color: locationMsg.startsWith("✅") ? "#1dbf73" : "#e74c3c"
+                }}>
+                  {locationMsg}
+                </p>
+              )}
+            </div>
+          )}
+
         </div>
       </div>
     </div>

@@ -90,17 +90,24 @@ const updateProfile = async (req, res) => {
 
 /* ===================== UPLOAD PROFILE IMAGE ===================== */
 const uploadProfileImage = async (req, res) => {
-  if (!req.file) {
-    return res
-      .status(400)
-      .json({ success: false, message: "No image uploaded" });
+  try {
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No image uploaded" });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { profileImage: req.file.path },
+      { new: true }
+    );
+
+    res.json({ success: true, data: user });
+  } catch (err) {
+    console.error("[uploadProfileImage] ERROR:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
-
-  const user = await User.findById(req.user._id);
-  user.profileImage = `/uploads/${req.file.filename}`;
-  await user.save();
-
-  res.json({ success: true, data: user });
 };
 
 /* ===================== UPLOAD COVER IMAGE ===================== */
@@ -112,7 +119,7 @@ const uploadCoverImage = async (req, res) => {
   }
 
   const user = await User.findById(req.user._id);
-  user.coverImage = `/uploads/${req.file.filename}`;
+  user.coverImage = req.file.path;
   await user.save();
 
   res.json({ success: true, data: user });
@@ -145,7 +152,7 @@ const addCourse = async (req, res) => {
   user.courses.push({
     title,
     price,
-    video: `/uploads/${req.file.filename}`
+    video: req.file.path
   });
 
   await user.save();
