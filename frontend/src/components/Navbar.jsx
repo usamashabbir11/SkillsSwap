@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   getIncomingRequestsApi,
-  getNotificationsApi
+  getNotificationsApi,
+  getProfileApi
 } from "../api/userApi";
 
 const Navbar = () => {
@@ -13,6 +14,8 @@ const Navbar = () => {
   const [requestCount, setRequestCount] = useState(0);
   const [notificationCount, setNotificationCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [profileImage, setProfileImage] = useState(null);
+  const [avatarHovered, setAvatarHovered] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -25,7 +28,20 @@ const Navbar = () => {
       setNotificationCount(notifications.data.filter(n => !n.read).length);
     };
 
+    const loadProfile = async () => {
+      try {
+        const res = await getProfileApi();
+        const img = res.data.profileImage;
+        if (img) {
+          setProfileImage(img.startsWith("http") ? img : `http://localhost:5000${img}`);
+        }
+      } catch {
+        // ignore
+      }
+    };
+
     loadCounts();
+    loadProfile();
   }, []);
 
   const hideRequestBadge = location.pathname === "/requests";
@@ -106,10 +122,6 @@ const Navbar = () => {
             <span style={{ color: "#777777", fontSize: "13px", marginRight: "6px", whiteSpace: "nowrap" }}>
               Hi, {user.name?.split(" ")[0]}
             </span>
-
-            <button onClick={() => navigate("/profile")} style={navLinkStyle("/profile")}>
-              Profile
-            </button>
 
             <button onClick={() => navigate("/users")} style={navLinkStyle("/users")}>
               Explore
@@ -196,6 +208,43 @@ const Navbar = () => {
             >
               Logout
             </button>
+
+            {/* Avatar */}
+            <div
+              onClick={() => navigate("/profile")}
+              title="View Profile"
+              onMouseEnter={() => setAvatarHovered(true)}
+              onMouseLeave={() => setAvatarHovered(false)}
+              style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "50%",
+                border: `2px solid ${avatarHovered ? "#1dbf73" : "#e9e9e9"}`,
+                cursor: "pointer",
+                overflow: "hidden",
+                flexShrink: 0,
+                marginLeft: "8px",
+                transition: "border-color 0.15s",
+                backgroundColor: "#1dbf73",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}
+            >
+              {profileImage ? (
+                <img
+                  src={profileImage}
+                  alt="Profile"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              ) : (
+                <span style={{ color: "#ffffff", fontSize: "13px", fontWeight: 700, lineHeight: 1 }}>
+                  {user.name
+                    ? user.name.split(" ").filter(Boolean).slice(0, 2).map(n => n[0].toUpperCase()).join("")
+                    : "U"}
+                </span>
+              )}
+            </div>
           </>
         ) : (
           <>
