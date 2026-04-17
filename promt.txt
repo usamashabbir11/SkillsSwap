@@ -1,97 +1,60 @@
-Build a complete Complaints System AND redesign the Admin Dashboard. This involves both backend and frontend changes.
+Add YouTube-style thumbnail support to courses.
 
 STRICT SAFETY RULES:
-- Do NOT modify any existing endpoints
-- Do NOT modify any existing models
-- Do NOT break any existing features
-- Only ADD new files and new endpoints
+- Do NOT break any existing course features
+- Do NOT change the course video upload logic
+- Existing courses without thumbnail show dark gradient fallback
 - Read every file before touching it
 
 BACKEND CHANGES:
 
-1. Create backend/models/complaintModel.js:
-   - reporter: ObjectId ref User (required)
-   - reportedUser: ObjectId ref User (required)
-   - reason: String enum ["Fake Profile", "Inappropriate Content", "Spam", "Harassment", "Other"] required
-   - description: String default ""
-   - status: String enum ["pending", "resolved", "dismissed"] default "pending"
-   - timestamps: true
+1. Update backend/models/userModel.js:
+   - In courseSchema add one new optional field:
+     thumbnail: { type: String, default: "" }
+   - Do not change any other field
 
-2. Create backend/controllers/complaintController.js with these functions:
-   - submitComplaint(req, res): logged in user submits complaint against another user. Check user cannot report themselves. Check no duplicate pending complaint against same user. Create complaint. Return success.
-   - getComplaints(req, res): admin only. Returns all complaints with reporter and reportedUser populated (name, email, profileImage). Sort by createdAt desc.
-   - updateComplaintStatus(req, res): admin only. Updates status to resolved or dismissed.
+2. Update backend/config/cloudinary.js:
+   - Add a new CloudinaryStorage for thumbnails:
+     folder: "skillsswap/thumbnails"
+     allowed_formats: ["jpg", "jpeg", "png", "webp"]
+   - Export a new multer instance: uploadThumbnail
+   - Do not change uploadProfile, uploadCover, uploadCourse
 
-3. Create backend/routes/complaintRoutes.js:
-   - POST /complaints — protected with getLoggedInUser
-   - GET /complaints — protected with getLoggedInUser + requireAdmin
-   - PUT /complaints/:id — protected with getLoggedInUser + requireAdmin
+3. Update backend/routes/userRoutes.js:
+   - Change POST /courses route to accept both video and thumbnail:
+     use multer fields: [{ name: "video", maxCount: 1 }, { name: "thumbnail", maxCount: 1 }]
+   - Import uploadThumbnail from cloudinary config
+   - Use a combined upload middleware that handles both fields
+   - Do not change any other route
 
-4. Register in backend/app.js:
-   - Add: import complaintRoutes from "./routes/complaintRoutes.js"
-   - Add: app.use("/complaints", complaintRoutes)
-   - Do not change anything else in app.js
-
-5. Update backend/routes/adminRoutes.js or adminController.js:
-   - The existing GET /admin/stats endpoint should also return totalComplaints count
-   - Read the file first and add only the complaints count to the existing stats response
+4. Update backend/controllers/userController.js:
+   - In addCourse function:
+     video = req.files?.video?.[0]?.path || ""
+     thumbnail = req.files?.thumbnail?.[0]?.path || ""
+   - Save both in the course object
+   - Do not change anything else
 
 FRONTEND CHANGES:
 
-6. Add to frontend/src/api/userApi.js (at the bottom under /* COMPLAINTS */):
-   - submitComplaintApi(reportedUserId, reason, description)
-   - getComplaintsApi()
-   - updateComplaintStatusApi(complaintId, status)
+5. Update frontend/src/components/EditProfile.jsx:
+   - In Add Course section, the video upload box should have a small "+ Add Thumbnail" button INSIDE the upload box at the bottom right corner
+   - This button triggers a hidden separate file input for thumbnail (accept="image/*")
+   - When thumbnail is selected, show it as background of the upload box with a play button overlay on top
+   - Show "Change Thumbnail" button bottom right when thumbnail is selected
+   - Show video filename in a green bar at the bottom of the box when video is selected
+   - Append thumbnail to FormData: data.append("thumbnail", courseThumbnail) only if selected
+   - State: courseThumbnail, courseThumbnailSelected, courseThumbnailPreview (use URL.createObjectURL for preview)
+   - Do not change any other field in EditProfile
+
+6. Update frontend/src/components/Profile.jsx:
+   - In courses section, for each course:
+     If course.thumbnail exists → show as background-image or img covering the course card header area (height 140px, object-fit cover)
+     If no thumbnail → show dark gradient with play button icon as before
+   - Use getImageUrl helper for the thumbnail URL
 
 7. Update frontend/src/components/UserProfile.jsx:
-   - Add a "Report User" button in the profile header area (small, subtle, gray color, not prominent)
-   - When clicked opens a small modal/form with:
-     - Dropdown: Select reason (Fake Profile, Inappropriate Content, Spam, Harassment, Other)
-     - Textarea: Description (optional, placeholder "Describe the issue...")
-     - Submit button and Cancel button
-   - On submit calls submitComplaintApi
-   - Show success message "Report submitted successfully"
-   - Do not change any other existing feature in UserProfile.jsx
+   - Same as Profile.jsx
+   - Show thumbnail if available, dark gradient with play button if not
+   - Use existing getImageUrl helper
 
-8. Completely redesign frontend/src/pages/AdminDashboard.jsx with premium dark sidebar layout:
-
-   LAYOUT: Two column — dark navy sidebar (240px) + white main area
-
-   DARK SIDEBAR:
-   - Background: #1a1a2e
-   - Logo: SkillsSwap with ADMIN badge in green
-   - Nav sections: Overview (Dashboard, Analytics), Management (All Users, Complaints, Courses, Payments), Settings
-   - Active item: green left border + green text + subtle green background
-   - Bottom: admin name and role
-   - Nav items navigate to correct routes
-
-   TOP BAR:
-   - White, height 56px, "Admin Dashboard" title
-   - Right: "Welcome back, Usama" + green avatar
-
-   STATS CARDS (4 in a row):
-   - Total Users (green accent)
-   - Total Swaps (blue accent)
-   - Total Courses (purple accent)
-   - Total Revenue from purchases (orange accent)
-   - Each card shows count + colored top accent bar + trend text
-
-   CHARTS ROW (2 columns):
-   - Weekly Signups bar chart (use simple CSS bars, no library needed)
-   - Recent Complaints table showing reporter name, reported user, reason, status badge
-
-   RECENT USERS TABLE (full width):
-   - Columns: User, Email, Courses, City, Joined, Actions
-   - Actions: View button (navigates to /users/:id) + Delete button (calls existing delete API)
-   - Fetch real users from GET /users/all
-
-   COMPLAINTS SECTION (full width, below users table):
-   - Title: "All Complaints"
-   - Table columns: Reporter, Reported User, Reason, Description, Status, Date, Actions
-   - Status badges: pending (yellow), resolved (green), dismissed (gray)
-   - Actions: "Resolve" button + "Dismiss" button (calls updateComplaintStatusApi)
-   - Fetch real complaints from GET /complaints
-
-   All data fetched from real APIs. No dummy data except the bar chart.
-
-Read ALL relevant files first before making any changes. Follow all rules in CLAUDE.md strictly.
+Read all relevant files first before making any changes. Follow all rules in CLAUDE.md strictly.

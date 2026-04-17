@@ -40,6 +40,9 @@ const EditProfile = () => {
   const [coursePrice, setCoursePrice] = useState("");
   const [courseVideo, setCourseVideo] = useState(null);
   const [courseVideoSelected, setCourseVideoSelected] = useState(false);
+  const [courseThumbnail, setCourseThumbnail] = useState(null);
+  const [courseThumbnailSelected, setCourseThumbnailSelected] = useState(false);
+  const [courseThumbnailPreview, setCourseThumbnailPreview] = useState(null);
   const [courseAdding, setCourseAdding] = useState(false);
   const [courseAdded, setCourseAdded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -52,6 +55,7 @@ const EditProfile = () => {
   /* ── refs for hidden file inputs ── */
   const profileInputRef = useRef(null);
   const coverInputRef = useRef(null);
+  const thumbnailInputRef = useRef(null);
 
   useEffect(() => {
     getProfileApi().then(res => {
@@ -132,6 +136,7 @@ const EditProfile = () => {
       data.append("title", courseTitle);
       data.append("price", coursePrice);
       data.append("video", courseVideo);
+      if (courseThumbnail) data.append("thumbnail", courseThumbnail);
       await axios.post(
         "http://localhost:5000/users/courses",
         data,
@@ -141,6 +146,9 @@ const EditProfile = () => {
       setCoursePrice("");
       setCourseVideo(null);
       setCourseVideoSelected(false);
+      setCourseThumbnail(null);
+      setCourseThumbnailSelected(false);
+      setCourseThumbnailPreview(null);
       setCourseAdded(true);
       setCourseAdding(false);
       setTimeout(() => setCourseAdded(false), 3000);
@@ -561,36 +569,95 @@ const EditProfile = () => {
                 </div>
               </div>
 
-              {/* Video upload area */}
+              {/* Video upload area with thumbnail inside */}
               <div style={{ marginBottom: "20px" }}>
                 <label style={lbl}>Course Video</label>
-                <label style={{ cursor: "pointer", display: "block" }}>
+                <div style={{
+                  position: "relative", borderRadius: "8px", overflow: "hidden",
+                  border: `2px dashed ${courseVideoSelected ? "#1dbf73" : "#e8eaed"}`
+                }}>
+                  {/* Clickable area triggers video file picker */}
+                  <label style={{ cursor: "pointer", display: "block" }}>
+                    <div style={{
+                      padding: "32px", textAlign: "center", transition: "all 0.2s",
+                      backgroundImage: courseThumbnailPreview ? `url(${courseThumbnailPreview})` : "none",
+                      backgroundColor: courseThumbnailPreview ? "transparent" : (courseVideoSelected ? "#f0fff8" : "#fafafa"),
+                      backgroundSize: "cover", backgroundPosition: "center",
+                      position: "relative", minHeight: "120px",
+                      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center"
+                    }}>
+                      {/* Dark overlay when thumbnail is shown */}
+                      {courseThumbnailPreview && (
+                        <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.42)" }} />
+                      )}
+                      <div style={{ position: "relative", zIndex: 1, fontSize: "28px", marginBottom: "8px" }}>
+                        {courseThumbnailPreview ? "▶️" : (courseVideoSelected ? "🎬" : "📹")}
+                      </div>
+                      <div style={{
+                        position: "relative", zIndex: 1, fontSize: "14px", fontWeight: 500,
+                        color: courseThumbnailPreview ? "#fff" : (courseVideoSelected ? "#1dbf73" : "#555")
+                      }}>
+                        {courseVideoSelected ? "Video selected ✅" : "Click to upload course video"}
+                      </div>
+                      {!courseVideoSelected && !courseThumbnailPreview && (
+                        <div style={{ fontSize: "12px", color: "#aaa", marginTop: "4px" }}>MP4, MOV, AVI supported</div>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      style={{ display: "none" }}
+                      onChange={e => {
+                        setCourseVideo(e.target.files[0]);
+                        setCourseVideoSelected(true);
+                      }}
+                    />
+                  </label>
+
+                  {/* Bottom bar: filename (green when video selected) + thumbnail button */}
                   <div style={{
-                    border: `2px dashed ${courseVideoSelected ? "#1dbf73" : "#e8eaed"}`,
-                    borderRadius: "8px", padding: "32px", textAlign: "center",
-                    backgroundColor: courseVideoSelected ? "#f0fff8" : "#fafafa",
-                    transition: "all 0.2s"
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: "8px 12px",
+                    backgroundColor: courseVideoSelected ? "#1dbf73" : "#f5f5f5",
+                    borderTop: "1px solid #e8eaed"
                   }}>
-                    <div style={{ fontSize: "28px", marginBottom: "8px" }}>
-                      {courseVideoSelected ? "🎬" : "📹"}
-                    </div>
-                    <div style={{ fontSize: "14px", fontWeight: 500, color: courseVideoSelected ? "#1dbf73" : "#555" }}>
-                      {courseVideoSelected ? "Video selected ✅" : "Click to upload course video"}
-                    </div>
-                    {!courseVideoSelected && (
-                      <div style={{ fontSize: "12px", color: "#aaa", marginTop: "4px" }}>MP4, MOV, AVI supported</div>
-                    )}
+                    <span style={{
+                      fontSize: "12px", fontWeight: 500,
+                      color: courseVideoSelected ? "#fff" : "#aaa",
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                      flex: 1, marginRight: "10px"
+                    }}>
+                      {courseVideoSelected ? courseVideo?.name : "No video selected"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={e => { e.stopPropagation(); e.preventDefault(); thumbnailInputRef.current?.click(); }}
+                      style={{
+                        backgroundColor: courseThumbnailSelected ? "#555" : "#222",
+                        color: "#fff", border: "none", borderRadius: "4px",
+                        padding: "5px 10px", fontSize: "11px", fontWeight: 500,
+                        cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0
+                      }}
+                    >
+                      {courseThumbnailSelected ? "Change Thumbnail" : "+ Add Thumbnail"}
+                    </button>
                   </div>
+
+                  {/* Hidden thumbnail file input */}
                   <input
+                    ref={thumbnailInputRef}
                     type="file"
-                    accept="video/*"
+                    accept="image/*"
                     style={{ display: "none" }}
                     onChange={e => {
-                      setCourseVideo(e.target.files[0]);
-                      setCourseVideoSelected(true);
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      setCourseThumbnail(file);
+                      setCourseThumbnailSelected(true);
+                      setCourseThumbnailPreview(URL.createObjectURL(file));
                     }}
                   />
-                </label>
+                </div>
               </div>
 
               {courseAdded && (

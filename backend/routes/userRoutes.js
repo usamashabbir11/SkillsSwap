@@ -48,9 +48,9 @@ router.post(
   "/courses",
   getLoggedInUser,
   (req, res, next) => {
-    uploadCourse.single("video")(req, res, (err) => {
+    uploadCourse.fields([{ name: "video", maxCount: 1 }, { name: "thumbnail", maxCount: 1 }])(req, res, (err) => {
       if (err) {
-        console.error("[MULTER ERROR] course video:", err);
+        console.error("[MULTER ERROR] course upload:", err);
         return res.status(500).json({ success: false, message: err.message });
       }
       next();

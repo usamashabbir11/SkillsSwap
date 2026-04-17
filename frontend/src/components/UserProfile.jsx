@@ -515,6 +515,16 @@ const UserProfile = () => {
                       overflow: "hidden"
                     }}
                   >
+                    {/* Thumbnail or gradient fallback */}
+                    <div style={{
+                      height: "140px",
+                      backgroundImage: course.thumbnail
+                        ? `url(${getImageUrl(course.thumbnail)})`
+                        : "linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)",
+                      backgroundSize: "cover",
+                      backgroundPosition: "center"
+                    }} />
+
                     {/* Course Header */}
                     <div style={{
                       padding: "14px 20px",

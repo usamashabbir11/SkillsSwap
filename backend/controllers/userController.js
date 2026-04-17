@@ -141,7 +141,7 @@ const updateSkills = async (req, res) => {
 const addCourse = async (req, res) => {
   const { title, price } = req.body;
 
-  if (!req.file) {
+  if (!req.files?.video?.[0]) {
     return res
       .status(400)
       .json({ success: false, message: "Video required" });
@@ -152,7 +152,8 @@ const addCourse = async (req, res) => {
   user.courses.push({
     title,
     price,
-    video: req.file.path
+    video: req.files.video[0].path,
+    thumbnail: req.files.thumbnail?.[0]?.path || ""
   });
 
   await user.save();

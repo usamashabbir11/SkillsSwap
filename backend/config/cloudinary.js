@@ -26,14 +26,33 @@ const coverStorage = new CloudinaryStorage({
 
 const courseStorage = new CloudinaryStorage({
   cloudinary,
+  params: async (req, file) => {
+    if (file.fieldname === "thumbnail") {
+      return {
+        folder: "skillsswap/thumbnails",
+        resource_type: "image",
+        allowed_formats: ["jpg", "jpeg", "png", "webp"]
+      };
+    }
+    return {
+      folder: "skillsswap/courses",
+      resource_type: "video",
+      chunk_size: 6000000,
+      transformation: [{ quality: "auto" }]
+    };
+  }
+});
+
+const thumbnailStorage = new CloudinaryStorage({
+  cloudinary,
   params: {
-    folder: "skillsswap/courses",
-    resource_type: "video",
-    chunk_size: 6000000,
-    transformation: [{ quality: "auto" }]
+    folder: "skillsswap/thumbnails",
+    resource_type: "image",
+    allowed_formats: ["jpg", "jpeg", "png", "webp"]
   }
 });
 
 export const uploadProfile = multer({ storage: profileStorage });
 export const uploadCover = multer({ storage: coverStorage });
 export const uploadCourse = multer({ storage: courseStorage, limits: { fileSize: 100 * 1024 * 1024 } });
+export const uploadThumbnail = multer({ storage: thumbnailStorage });

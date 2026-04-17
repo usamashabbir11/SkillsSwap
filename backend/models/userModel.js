@@ -4,7 +4,8 @@ const courseSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
     price: { type: Number, required: true },
-    video: { type: String, required: true }
+    video: { type: String, required: true },
+    thumbnail: { type: String, default: "" }
   },
   { _id: false }
 );
