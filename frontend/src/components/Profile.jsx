@@ -134,24 +134,26 @@ const Profile = () => {
               Edit Profile
             </button>
 
-            <button
-              onClick={handleDeleteAccount}
-              style={{
-                backgroundColor: "#fff0f0",
-                color: "#c0392b",
-                border: "1.5px solid #e8b4b8",
-                borderRadius: "4px",
-                padding: "9px 20px",
-                fontSize: "14px",
-                fontWeight: 500,
-                cursor: "pointer",
-                transition: "background 0.15s"
-              }}
-              onMouseEnter={e => e.currentTarget.style.backgroundColor = "#fde0e0"}
-              onMouseLeave={e => e.currentTarget.style.backgroundColor = "#fff0f0"}
-            >
-              Delete Account
-            </button>
+            {JSON.parse(localStorage.getItem("user"))?.role !== "admin" && (
+              <button
+                onClick={handleDeleteAccount}
+                style={{
+                  backgroundColor: "#fff0f0",
+                  color: "#c0392b",
+                  border: "1.5px solid #e8b4b8",
+                  borderRadius: "4px",
+                  padding: "9px 20px",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  transition: "background 0.15s"
+                }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = "#fde0e0"}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = "#fff0f0"}
+              >
+                Delete Account
+              </button>
+            )}
           </div>
         </div>
 

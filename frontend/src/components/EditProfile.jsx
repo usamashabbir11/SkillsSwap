@@ -253,19 +253,21 @@ const EditProfile = () => {
         </nav>
 
         {/* Delete Account */}
-        <div style={{ padding: "16px 20px", borderTop: "1px solid #e8eaed" }}>
-          <button
-            onClick={handleDeleteAccount}
-            style={{
-              display: "flex", alignItems: "center", gap: "8px",
-              width: "100%", padding: "10px 0", border: "none", cursor: "pointer",
-              backgroundColor: "transparent", color: "#e74c3c",
-              fontSize: "14px", fontWeight: 500, textAlign: "left"
-            }}
-          >
-            🗑️ Delete Account
-          </button>
-        </div>
+        {JSON.parse(localStorage.getItem("user"))?.role !== "admin" && (
+          <div style={{ padding: "16px 20px", borderTop: "1px solid #e8eaed" }}>
+            <button
+              onClick={handleDeleteAccount}
+              style={{
+                display: "flex", alignItems: "center", gap: "8px",
+                width: "100%", padding: "10px 0", border: "none", cursor: "pointer",
+                backgroundColor: "transparent", color: "#e74c3c",
+                fontSize: "14px", fontWeight: 500, textAlign: "left"
+              }}
+            >
+              🗑️ Delete Account
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ═══ MAIN AREA ═══ */}
