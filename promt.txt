@@ -1,34 +1,26 @@
-In frontend/src/components/Profile.jsx and frontend/src/components/UserProfile.jsx, fix the course cards to look exactly like YouTube video cards.
+Add delete course functionality.
 
-Change ONLY the courses section:
+BACKEND:
+1. In backend/controllers/userController.js, add a new function deleteCourse:
+   - Route will be DELETE /users/courses/:courseIndex
+   - Get the course index from req.params.courseIndex
+   - Find the logged in user
+   - Remove the course at that index from user.courses array using splice
+   - Save the user
+   - Return success
 
-1. Grid: repeat(3, 1fr) — 3 columns like YouTube
-2. Thumbnail container: Remove fixed height. Instead use:
-   position: "relative"
-   paddingTop: "56.25%" — this creates perfect 16:9 aspect ratio
-   overflow: "hidden"
-3. The img tag inside must be:
-   position: "absolute"
-   top: 0
-   left: 0
-   width: "100%"
-   height: "100%"
-   objectFit: "cover"
-   display: "block"
-4. The gradient fallback div must also be:
-   position: "absolute"
-   top: 0
-   left: 0
-   width: "100%"
-   height: "100%"
-5. The play button overlay must also be position absolute inset 0
-6. The video player when playing must be:
-   position: "absolute"
-   top: 0
-   left: 0
-   width: "100%"
-   height: "100%"
+2. In backend/routes/userRoutes.js, add:
+   - DELETE /courses/:courseIndex protected with getLoggedInUser middleware
 
-This is the standard YouTube technique — paddingTop 56.25% creates 16:9 ratio that scales perfectly on any screen size.
+FRONTEND:
+3. In frontend/src/api/userApi.js, add at the bottom:
+   - deleteCourseApi(courseIndex) — calls DELETE /users/courses/:courseIndex
 
-Read Profile.jsx and UserProfile.jsx first. Change only the courses grid and thumbnail container. Do not change anything else. Follow all rules in CLAUDE.md strictly.
+4. In frontend/src/components/Profile.jsx, add a delete button on each course card:
+   - Small red trash/delete button at top right corner of each course card
+   - Show a confirm dialog: "Are you sure you want to delete this course? This cannot be undone."
+   - On confirm call deleteCourseApi(index)
+   - On success remove the course from the local state immediately
+   - Do not show delete button on UserProfile.jsx (only own profile)
+
+Read all relevant files first. Follow all rules in CLAUDE.md strictly.

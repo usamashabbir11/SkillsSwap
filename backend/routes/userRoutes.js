@@ -59,6 +59,8 @@ router.post(
   userController.addCourse
 );
 
+router.delete("/courses/:courseIndex", getLoggedInUser, userController.deleteCourse);
+
 router.get("/all", userController.getAllUsers);
 router.get("/:id", getLoggedInUser, userController.getUserById);
 

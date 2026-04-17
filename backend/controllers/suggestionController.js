@@ -17,7 +17,7 @@ const haversineKm = ([lng1, lat1], [lng2, lat2]) => {
 export const getSuggestions = async (req, res) => {
   try {
     const me = await User.findById(req.user._id);
-    const allUsers = await User.find({ _id: { $ne: req.user._id } });
+    const allUsers = await User.find({ _id: { $ne: req.user._id }, role: { $ne: "admin" } });
 
     const myCoords = me?.location?.coordinates;
     const myHasLocation = myCoords && !(myCoords[0] === 0 && myCoords[1] === 0);

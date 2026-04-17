@@ -160,9 +160,23 @@ const addCourse = async (req, res) => {
   res.json({ success: true, data: user.courses });
 };
 
+/* ===================== DELETE COURSE ===================== */
+const deleteCourse = async (req, res) => {
+  const courseIndex = parseInt(req.params.courseIndex, 10);
+  const user = await User.findById(req.user._id);
+
+  if (isNaN(courseIndex) || courseIndex < 0 || courseIndex >= user.courses.length) {
+    return res.status(400).json({ success: false, message: "Invalid course index" });
+  }
+
+  user.courses.splice(courseIndex, 1);
+  await user.save();
+  res.json({ success: true, data: user.courses });
+};
+
 /* ===================== GET ALL USERS ===================== */
 const getAllUsers = async (req, res) => {
-  const query = req.user ? { _id: { $ne: req.user._id } } : {};
+  const query = req.user ? { _id: { $ne: req.user._id }, role: { $ne: "admin" } } : { role: { $ne: "admin" } };
   const users = await User.find(query);
   res.json({ success: true, data: users });
 };
@@ -234,6 +248,7 @@ export default {
   uploadCoverImage,
   updateSkills,
   addCourse,
+  deleteCourse,
   getAllUsers,
   getUserById,
   deleteOwnProfile,

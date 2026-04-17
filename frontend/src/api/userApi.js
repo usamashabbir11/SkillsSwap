@@ -124,6 +124,11 @@ export const adminDeleteUserApi = async (id) => {
   return res.data;
 };
 
+export const deleteCourseApi = async (courseIndex) => {
+  const res = await axios.delete(`${API_BASE_URL}/users/courses/${courseIndex}`, authHeader());
+  return res.data;
+};
+
 /* ================= PHASE 12 — REVIEWS ================= */
 
 export const submitReviewApi = async (dealId, rating, comment) => {
