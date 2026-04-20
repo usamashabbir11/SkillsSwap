@@ -107,69 +107,58 @@ export const respondToRequest = async (req, res) => {
   res.json({ success: true });
 };
 
-// PHASE 7.2 — SELECT COURSE 
+// PHASE 7.2 — SELECT COURSE
 export const selectCourseForSwap = async (req, res) => {
   const { dealId, courseIndex } = req.body;
 
   const deal = await SwapDeal.findById(dealId);
   if (!deal) {
-    return res
-      .status(404)
-      .json({ success: false, message: "Swap deal not found" });
+    return res.status(404).json({ success: false, message: "Swap deal not found" });
   }
 
-  const selectingUser = await User.findById(req.user._id);
-
-  if (
-    typeof courseIndex !== "number" ||
-    courseIndex < 0 ||
-    courseIndex >= selectingUser.courses.length
-  ) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Invalid course selection" });
-  }
-
+  const selectingUserId = req.user._id.toString();
   let courseOwnerId = null;
-  let courseTitle = selectingUser.courses[courseIndex].title;
 
-  // User B selects → courseFromA (course owned by User A)
-  if (req.user._id.toString() === deal.userB.toString()) {
+  if (selectingUserId === deal.userB.toString()) {
     if (deal.courseFromA !== null) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Course already selected" });
+      return res.status(400).json({ success: false, message: "Course already selected" });
     }
-
+    const userA = await User.findById(deal.userA);
+    if (typeof courseIndex !== "number" || courseIndex < 0 || courseIndex >= userA.courses.length) {
+      return res.status(400).json({ success: false, message: "Invalid course selection" });
+    }
     deal.courseFromA = courseIndex;
     courseOwnerId = deal.userA;
   }
 
-  // User A selects → courseFromB (course owned by User B)
-  else if (req.user._id.toString() === deal.userA.toString()) {
+  else if (selectingUserId === deal.userA.toString()) {
     if (deal.courseFromB !== null) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Course already selected" });
+      return res.status(400).json({ success: false, message: "Course already selected" });
     }
-
+    const userB = await User.findById(deal.userB);
+    if (typeof courseIndex !== "number" || courseIndex < 0 || courseIndex >= userB.courses.length) {
+      return res.status(400).json({ success: false, message: "Invalid course selection" });
+    }
     deal.courseFromB = courseIndex;
     courseOwnerId = deal.userB;
-  } else {
-    return res
-      .status(403)
-      .json({ success: false, message: "Not part of this swap" });
+  }
+
+  else {
+    return res.status(403).json({ success: false, message: "Not part of this swap" });
   }
 
   await deal.save();
+
+  const selectingUser = await User.findById(selectingUserId);
+  const courseOwner = await User.findById(courseOwnerId);
+  const courseTitle = courseOwner.courses[courseIndex]?.title || "a course";
 
   await Notification.create({
     user: courseOwnerId,
     message: `${selectingUser.name} selected your course "${courseTitle}"`
   });
 
-  const courseOwner = await User.findById(courseOwnerId).select("email");
-  if (courseOwner) {
+  if (courseOwner.email) {
     sendCourseSelectedEmail(courseOwner.email, selectingUser.name, courseTitle);
   }
 

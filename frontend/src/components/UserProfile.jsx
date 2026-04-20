@@ -180,6 +180,7 @@ const UserProfile = () => {
 
   const isSender = deal && deal.userA === loggedInUser.id;
   const isReceiver = deal && deal.userB === loggedInUser.id;
+  const bothSelected = deal && deal.courseFromA !== null && deal.courseFromB !== null;
 
   const avgRating = reviews.length
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
@@ -541,6 +542,17 @@ const UserProfile = () => {
               </h3>
 
               {user.courses?.length ? (
+                <>
+                {deal && selectedCourseIndex === null && (
+                  <p style={{ fontSize: "13px", color: "#f39c12", fontWeight: 600, marginBottom: "12px" }}>
+                    Select one course to include in your swap
+                  </p>
+                )}
+                {deal && selectedCourseIndex !== null && !bothSelected && (
+                  <p style={{ fontSize: "13px", color: "#f39c12", fontWeight: 600, marginBottom: "12px" }}>
+                    Course selected. Waiting for the other user to select their course.
+                  </p>
+                )}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
                   {user.courses.map((course, index) => {
                     const hasAccess = accessList[index] === true;
@@ -752,6 +764,7 @@ const UserProfile = () => {
                     );
                   })}
                 </div>
+                </>
               ) : (
                 <p style={{ margin: 0, fontSize: "14px", color: "#bbb" }}>No courses available.</p>
               )}

@@ -1,0 +1,19 @@
+Read CLAUDE.md first to understand the project rules and structure.
+
+Then fix this bug in frontend/src/components/UserProfile.jsx:
+
+After both users have selected their courses, the message "Course selected. Waiting for the other user to select their course." should disappear.
+
+The message should only show when selectedCourseIndex is not null BUT the other user has NOT yet selected their course.
+
+Here is the logic to determine if the other user has also selected:
+- If loggedInUser is userA (isSender), then the other user's selection is stored in deal.courseFromA. If deal.courseFromA is not null, both have selected.
+- If loggedInUser is userB (isReceiver), then the other user's selection is stored in deal.courseFromB. If deal.courseFromB is not null, both have selected.
+
+So add a variable:
+const bothSelected = deal && deal.courseFromA !== null && deal.courseFromB !== null;
+
+Then update the status message logic:
+- If deal exists and selectedCourseIndex is null: show "Select one course to include in your swap"
+- If deal exists and selectedCourseIndex is not null and bothSelected is false: show "Course selected. Waiting for the other user to select their course."
+- If bothSelected is true: show nothing, hide the message completely.
